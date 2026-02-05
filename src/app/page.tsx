@@ -133,7 +133,10 @@ export default function Home() {
           </div>
 
           {/* Opción 3: Ver BI */}
-          <div className="group bg-white rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:shadow-[0_20px_40px_-10px_rgba(37,65,83,0.1)] hover:border-[#254153]/20 transition-all duration-300 cursor-pointer relative overflow-hidden">
+          <div
+            onClick={() => router.push('/bi')}
+            className="group bg-white rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:shadow-[0_20px_40px_-10px_rgba(37,65,83,0.1)] hover:border-[#254153]/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
+          >
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <PieChart className="w-32 h-32" />
             </div>

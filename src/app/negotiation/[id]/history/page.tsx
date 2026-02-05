@@ -8,7 +8,8 @@ import {
     Calendar,
     TrendingDown,
     TrendingUp,
-    FileText
+    FileText,
+    Building2
 } from 'lucide-react'
 
 // Define interfaces for history data
@@ -22,7 +23,9 @@ interface HistoryItem {
         descripcion: string
         tipo: string
         supplier_id: string
-    } | null // It might be null if left joined, though we expect inner for valid history
+        supplier_name?: string
+    } | null
+    supplier_name?: string
 }
 
 export default function NegotiationHistoryPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,30 +34,71 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
 
     const [loading, setLoading] = useState(true)
     const [history, setHistory] = useState<HistoryItem[]>([])
+    const [suppliers, setSuppliers] = useState<any[]>([])
     const [supplierName, setSupplierName] = useState('Cargando...')
+    const [currentSupplierId, setCurrentSupplierId] = useState(id)
 
     // Filters State
+    const [selectedSupplier, setSelectedSupplier] = useState(id)
     const [selectedProduct, setSelectedProduct] = useState('Todos')
     const [selectedDate, setSelectedDate] = useState('Todas')
 
     useEffect(() => {
-        loadHistory()
-    }, [id])
+        loadInitialData()
+    }, [])
 
-    const loadHistory = async () => {
+    const loadInitialData = async () => {
         setLoading(true)
         try {
-            // 1. Fetch Supplier Name (Consistency)
-            const { data: supplierData } = await supabase
-                .from('Neg_query_proveedores')
-                .select('*')
-                .or(`nit.eq.${id},id.eq.${id},codigo.eq.${id}`)
-                .single()
+            // 1. Fetch available suppliers
+            const { data: sups } = await supabase.from('Neg_query_proveedores').select('*')
+            if (sups) setSuppliers(sups)
+
+            // 2. Resolve the stable ID for the initial filter
+            let initialStableId = id
+            let supplierData = sups?.find(s => s.nit == id || s.id == id || s.codigo == id)
+
+            if (!supplierData && id.startsWith('temp-id-')) {
+                const idx = parseInt(id.replace('temp-id-', ''))
+                if (sups && sups[idx]) {
+                    supplierData = sups[idx]
+                }
+            }
 
             if (supplierData) {
-                setSupplierName(supplierData.proveedor || supplierData.nombre || supplierData.razon_social || 'Proveedor Desconocido')
+                // Prioritize name as the identifier for filtering
+                initialStableId = supplierData.proveedor || supplierData.nombre || supplierData.razon_social || supplierData.nit || id
+                setSelectedSupplier(initialStableId)
             } else {
-                setSupplierName(`Proveedor ${id}`)
+                setSelectedSupplier(id)
+            }
+
+            // 3. Load history with the resolved ID
+            // loadHistory uses selectedSupplier, so we pass it explicitly or wait for effect
+            // In this version of the code, loadHistory is called below manually
+            await loadHistory(initialStableId)
+        } catch (err) {
+            console.error(err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const loadHistory = async (overrideId?: string) => {
+        const targetId = overrideId || selectedSupplier
+        try {
+            // Update Supplier Name based on selection
+            if (targetId === 'Todos') {
+                setSupplierName('Todos los Proveedores')
+            } else {
+                const found = suppliers.find(s =>
+                    s.nit == targetId || s.id == targetId || s.codigo == targetId || s._ui_id == targetId
+                )
+                if (found) {
+                    setSupplierName(found.proveedor || found.nombre || found.razon_social || found.proveedor_nombre || 'Proveedor Seleccionado')
+                } else {
+                    setSupplierName(targetId.toString().startsWith('temp-id-') ? `Proveedor Seleccionado` : `Proveedor ${targetId}`)
+                }
             }
 
             // 2. Fetch History
@@ -62,35 +106,77 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
             // Or just fetch all history and filter by supplier ID if we can match it.
             // Since we can't easily filter by a deep relation in one go without shaping the query correctly:
             // "Neg_productos!inner(supplier_id)" ensures we only get rows that have a matching product.
-
             // NOTE: supabase-js syntax for foreign table filter
             // .eq('Neg_productos.supplier_id', id) might work if relation is set up right
             // but our ID is loose (might be NIT, might be internal ID).
             // For now, let's fetch a bit more and filter clientside if IDs don't match 1:1 on type (string vs int).
 
-            const { data: historyData, error } = await supabase
+            // 2. Fetch History
+            // We filter on the server if a specific supplier is selected for maximum reliability
+            let query = supabase
                 .from('Neg_historial_precios')
                 .select(`
                     *,
                     Neg_productos (
                         descripcion,
                         tipo,
-                        supplier_id
+                        supplier_id,
+                        supplier_name
                     )
                 `)
-                .order('fecha_cambio', { ascending: false })
+
+            if (targetId !== 'Todos') {
+                // Search by both ID and name for maximum reliability on server
+                query = query.or(`supplier_id.eq."${targetId}",supplier_name.eq."${targetId}"`)
+            }
+
+            const { data: historyData, error } = await query.order('fecha_cambio', { ascending: false })
 
             if (error) throw error
 
-            // Filter for this supplier roughly
-            // Since we inserted '123456789' for seed data, we'll show those if they exist
-            // In many demo cases the ID might not match exactly if user picked a real row but we inserted fake products.
-            // WE WILL SHOW ALL relevant history for now to ensure user sees something during demo.
+            // 3. Resolve possible IDs for ONLY the target selection
+            const possibleIds: string[] = [targetId]
 
-            // Real Logic would be:
-            // const filtered = historyData.filter(h => h.Neg_productos?.supplier_id == id)
+            // Find the supplier object to get its alternate identities (NIT, Code)
+            const foundSup = suppliers.find(s =>
+                s.nit?.toString() === targetId ||
+                s.id?.toString() === targetId ||
+                s.codigo?.toString() === targetId ||
+                s.proveedor === targetId
+            )
 
-            setHistory(historyData || [])
+            if (foundSup) {
+                if (foundSup.nit) possibleIds.push(foundSup.nit.toString())
+                if (foundSup.codigo) possibleIds.push(foundSup.codigo.toString())
+                if (foundSup.proveedor) possibleIds.push(foundSup.proveedor)
+            }
+
+            // Clean up and deduplicate IDs
+            const uniquePossibleIds = Array.from(new Set(possibleIds.filter(Boolean).map(i => i.toString())))
+
+            // 5. Final Filtering
+            const filteredData = (historyData || []).filter(h => {
+                if (targetId === 'Todos') return true
+
+                const itemSupplierId = (h as any).supplier_id?.toString()
+                const itemSupplierName = (h as any).supplier_name?.toString()
+                const joinedSupplierId = h.Neg_productos?.supplier_id?.toString()
+                const joinedSupplierName = (h.Neg_productos as any)?.supplier_name?.toString()
+
+                return uniquePossibleIds.includes(itemSupplierId) ||
+                    uniquePossibleIds.includes(joinedSupplierId) ||
+                    uniquePossibleIds.includes(itemSupplierName) ||
+                    uniquePossibleIds.includes(joinedSupplierName)
+            })
+
+            console.log('History Debug:', {
+                targetId,
+                possibleIds,
+                totalLoaded: historyData?.length,
+                filtered: filteredData.length
+            })
+
+            setHistory(filteredData)
 
         } catch (error) {
             console.error('Error loading history:', error)
@@ -98,6 +184,14 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
             setLoading(false)
         }
     }
+
+    // Effect to reload history when supplier changes
+    useEffect(() => {
+        // We ensure we only trigger this after the initial mount logic or on user interaction
+        if (suppliers.length > 0) {
+            loadHistory()
+        }
+    }, [selectedSupplier])
 
     // Derived State for Filters
     const uniqueProducts = Array.from(new Set(history.map(item => item.Neg_productos?.descripcion).filter(Boolean))) as string[]
@@ -108,7 +202,7 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
         return d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
     })))
 
-    // Filtered Data
+    // Filtered Data: history is already filtered by supplier in loadHistory
     const filteredHistory = history.filter(item => {
         const matchesProduct = selectedProduct === 'Todos' || item.Neg_productos?.descripcion === selectedProduct
 
@@ -163,7 +257,24 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                     </div>
 
                     {/* Filters Area */}
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-3">
+                        <div className="relative">
+                            <select
+                                value={selectedSupplier}
+                                onChange={(e) => setSelectedSupplier(e.target.value)}
+                                className="appearance-none bg-white border border-slate-300 rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#254153] focus:border-transparent shadow-sm min-w-[200px]"
+                            >
+                                <option value="Todos">Todos los Proveedores</option>
+                                {suppliers.map(s => {
+                                    const supplierNameValue = s.proveedor || s.nombre || s.razon_social || s.nit || s.id
+                                    return (
+                                        <option key={s.id || s.nit || s._ui_id} value={supplierNameValue}>
+                                            {s.proveedor || s.nombre}
+                                        </option>
+                                    )
+                                })}
+                            </select>
+                        </div>
                         <div className="relative">
                             <select
                                 value={selectedProduct}
@@ -210,6 +321,7 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                 <thead>
                                     <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
                                         <th className="px-6 py-4">Fecha / Hora</th>
+                                        <th className="px-6 py-4">Proveedor</th>
                                         <th className="px-6 py-4">Producto</th>
                                         <th className="px-6 py-4 text-right">Precio Anterior</th>
                                         <th className="px-6 py-4 text-right">Nuevo Precio</th>
@@ -228,6 +340,14 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                                     <div className="flex items-center gap-2 text-slate-600">
                                                         <Calendar className="w-4 h-4 text-slate-400" />
                                                         <span className="text-sm font-medium">{formatDate(item.fecha_cambio)}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-2">
+                                                        <Building2 className="w-4 h-4 text-[#254153]" />
+                                                        <span className="text-sm font-bold text-slate-700">
+                                                            {(item as any).supplier_name || (item.Neg_productos as any)?.supplier_name || (selectedSupplier !== 'Todos' ? supplierName : 'N/A')}
+                                                        </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">

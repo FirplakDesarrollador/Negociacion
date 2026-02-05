@@ -23,6 +23,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
     const router = useRouter()
     const [loading, setLoading] = useState(true)
+    const [supplier, setSupplier] = useState<any>(null)
     const [supplierName, setSupplierName] = useState('Cargando...')
     const [products, setProducts] = useState<any[]>([])
 
@@ -42,51 +43,91 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         setLoading(true)
         try {
             // 1. Fetch Supplier Details
-            const { data: supplierData } = await supabase
+            let { data: supplierData } = await supabase
                 .from('Neg_query_proveedores')
                 .select('*')
-                .or(`nit.eq.${id},id.eq.${id},codigo.eq.${id}`)
+                .or(`nit.eq."${id}",id.eq."${id}",codigo.eq."${id}"`)
                 .single()
 
+            // Fallback: If no match and it's a temp ID, fetch all and find by index
+            if (!supplierData && id.startsWith('temp-id-')) {
+                const idx = parseInt(id.replace('temp-id-', ''))
+                const { data: allSuppliers } = await supabase
+                    .from('Neg_query_proveedores')
+                    .select('*')
+
+                if (allSuppliers && allSuppliers[idx]) {
+                    supplierData = allSuppliers[idx]
+                }
+            }
+
             if (supplierData) {
-                setSupplierName(supplierData.proveedor || supplierData.nombre || supplierData.razon_social || 'Proveedor Desconocido')
+                setSupplier(supplierData)
+                const name = supplierData.proveedor || supplierData.nombre || supplierData.razon_social || supplierData.proveedor_nombre || `Proveedor ${id}`
+                setSupplierName(name)
             } else {
                 setSupplierName(`Proveedor ${id}`)
             }
 
-            // 2. Fetch Products form Real DB
-            // Assuming the supplier_id in Neg_productos matches the ID we are using
-            // We'll try to match exact first, if empty, we might fallback to all for demo if needed, but better stick to logic
-            let { data: productsData, error: productError } = await supabase
-                .from('Neg_productos')
+            // Resolve the stable ID for database lookups (Negotiated products)
+            const stableId = supplierData?.nit || supplierData?.codigo || id
+
+            // 2. Fetch Products from Neg_base
+            // We search by Provedor or Codigo_provedor based on what was selected
+            // 2. Fetch Products from Neg_base (Master)
+            let { data: baseData, error: baseError } = await supabase
+                .from('Neg_base')
                 .select('*')
+                .or(`Codigo_provedor.eq."${id}",Provedor.eq."${supplierData?.proveedor || id}"`)
 
-            // Filter locally or better yet via query if we knew the exact column mapping. 
-            // Since we inserted '123456789' as supplier_id in the seed, we might not match the clicked supplier.
-            // For now, to ensure DATA SHOWS UP for the user demo, if productsData is empty or filtered out, we might want to show the specific seeded ones.
+            if (baseError) throw baseError
 
-            if (productError) throw productError
+            // 3. Fetch Overrides from Neg_productos (Operational)
+            // We search by stableId OR supplier_name for maximum persistence
+            let opQuery = supabase.from('Neg_productos').select('*')
 
-            // Allow all products for now to ensure visibility if ID doesn't match perfectly, 
-            // OR filter if we have a match. 
-            // In a real app: .eq('supplier_id', id)
-
-            if (!productsData || productsData.length === 0) {
-                // Fallback to empty
-                productsData = []
+            if (supplierData?.proveedor) {
+                opQuery = opQuery.or(`supplier_id.eq."${stableId}",supplier_name.eq."${supplierData.proveedor}"`)
             } else {
-                // Optional: Filter by supplier_id if we have consistent IDs
-                // productsData = productsData.filter(p => p.supplier_id == id)
+                opQuery = opQuery.eq('supplier_id', stableId)
             }
 
-            const initializedProducts = (productsData || []).map((p: any) => ({
-                ...p,
-                precio_negociado: p.precio_actual, // Default to current price from DB
-                ahorro_unitario: 0,
-                ahorro_porcentaje: 0,
-                ahorro_total: 0,
-                months: 12 // Default assumption
-            }))
+            let { data: operationalData } = await opQuery
+
+            const initializedProducts = (baseData || []).map((p: any) => {
+                const parseNumeric = (str: string | null) => {
+                    if (!str) return 0
+                    // Colombian format: 1.000.000,00 or 1.000.000
+                    // Remove dots (thousands)
+                    let clean = str.replace(/\./g, '')
+                    // Replace comma with dot (decimal)
+                    clean = clean.replace(/,/g, '.')
+                    return parseFloat(clean) || 0
+                }
+
+                // Check for operational override
+                const override = (operationalData || []).find(o => o.base_id == p.Id)
+
+                const basePrice = parseNumeric(p.Precio)
+                const currentPrice = override ? override.precio_actual : basePrice
+                const quantity = override ? override.cantidad_mensual : parseNumeric(p.Cantidad)
+
+                return {
+                    id: p.Id, // We use base_id as the primary reference in the UI
+                    db_id: override?.id, // Existing Neg_productos ID if any
+                    descripcion: p.Descripcion_articulo || 'Sin descripción',
+                    precio_actual: currentPrice,
+                    precio_negociado: currentPrice,
+                    cantidad_mensual: quantity,
+                    tipo: override?.tipo || 'Ahorro',
+                    ahorro_unitario: 0,
+                    ahorro_porcentaje: 0,
+                    ahorro_total: 0,
+                    months: 12,
+                    unidad: p.Unidad_de_medida,
+                    codigo_articulo: p.Codigo_Articulo
+                }
+            })
 
             setProducts(initializedProducts)
             calculateTotals(initializedProducts)
@@ -151,24 +192,39 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         try {
             setLoading(true)
 
-            for (const product of changedProducts) {
-                // 1. Update Product Price (Persistence)
-                const { error: updateError } = await supabase
-                    .from('Neg_productos')
-                    .update({ precio_actual: product.precio_negociado })
-                    .eq('id', product.id)
+            // Resolve stable supplier identity for storage (Consistent with loadData)
+            const stableSupplierId = supplier?.nit || supplier?.codigo || id
 
-                if (updateError) throw updateError
+            for (const product of changedProducts) {
+                // 1. Upsert into Neg_productos (Operational)
+                const { data: upsertData, error: upsertError } = await supabase
+                    .from('Neg_productos')
+                    .upsert({
+                        base_id: product.id,
+                        supplier_id: stableSupplierId,
+                        supplier_name: supplierName, // Store Name for stable filtering
+                        descripcion: product.descripcion,
+                        precio_actual: product.precio_negociado,
+                        cantidad_mensual: product.cantidad_mensual,
+                        tipo: product.tipo
+                    }, {
+                        onConflict: 'base_id, supplier_id'
+                    })
+                    .select()
+                    .single()
+
+                if (upsertError) throw upsertError
 
                 // 2. Insert History Log
                 const { error: historyError } = await supabase
                     .from('Neg_historial_precios')
                     .insert({
-                        product_id: product.id,
+                        product_id: upsertData.id,
+                        supplier_id: stableSupplierId,
+                        supplier_name: supplierName, // Store Name for stable filtering
                         precio_anterior: product.precio_actual,
                         precio_nuevo: product.precio_negociado,
                         ahorro_generado: product.ahorro_total,
-                        // usuario_id: user.id // TODO: Add auth user
                     })
 
                 if (historyError) console.error('Error saving history for', product.id, historyError)

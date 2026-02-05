@@ -236,7 +236,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                             <h4 className="text-3xl font-bold">{formatCurrency(unitSavings)}</h4>
                         </div>
                         <div className="bg-[#e78b60] rounded-xl p-6 text-white text-center shadow-lg shadow-orange-400/20">
-                            <p className="text-orange-50 text-sm font-semibold uppercase tracking-wider mb-1">Ahorro Total Estimado</p>
+                            <p className="text-orange-50 text-sm font-semibold uppercase tracking-wider mb-1">Ahorro Anual Proyectado</p>
                             <h4 className="text-3xl font-bold">{formatCurrency(totalSavings)}</h4>
                             <p className="text-xs text-orange-100 mt-2 opacity-80">(Unitario × Cantidad {consumption} × {months} Meses)</p>
                         </div>
