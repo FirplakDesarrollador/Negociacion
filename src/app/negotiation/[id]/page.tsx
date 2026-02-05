@@ -169,7 +169,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             ...updatedProduct,
             ahorro_unitario: ahorroUnitario,
             ahorro_porcentaje: ahorroPorcentaje,
-            ahorro_total: ahorroTotal
+            ahorro_total: ahorroTotal,
+            isDirty: true // Mark as explicitly negotiated
         }
 
         const updatedList = products.map(p => p.id === finalProduct.id ? finalProduct : p)
@@ -178,8 +179,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
     }
 
     const handleGlobalSave = async () => {
-        // Filter products that have been negotiated (price changed)
-        const changedProducts = products.filter(p => p.precio_negociado !== p.precio_actual)
+        // Filter products that have been negotiated (price changed or explicitly marked via modal)
+        const changedProducts = products.filter(p => p.isDirty || p.precio_negociado !== p.precio_actual)
 
         if (changedProducts.length === 0) {
             alert('No hay cambios para guardar.')
@@ -196,7 +197,12 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             const stableSupplierId = supplier?.nit || supplier?.codigo || id
 
             for (const product of changedProducts) {
-                // 1. Upsert into Neg_productos (Operational)
+                // 1. Determine the master price to store
+                // Only "Ahorro" (Hard Savings) updates the current price. 
+                // "Avoidance" stays at the current price.
+                const priceToStore = product.tipo === 'Ahorro' ? product.precio_negociado : product.precio_actual
+
+                // 2. Upsert into Neg_productos (Operational)
                 const { data: upsertData, error: upsertError } = await supabase
                     .from('Neg_productos')
                     .upsert({
@@ -204,7 +210,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         supplier_id: stableSupplierId,
                         supplier_name: supplierName, // Store Name for stable filtering
                         descripcion: product.descripcion,
-                        precio_actual: product.precio_negociado,
+                        precio_actual: priceToStore,
                         cantidad_mensual: product.cantidad_mensual,
                         tipo: product.tipo
                     }, {
