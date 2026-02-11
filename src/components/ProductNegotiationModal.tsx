@@ -24,6 +24,7 @@ interface ProductNegotiationModalProps {
 export default function ProductNegotiationModal({ isOpen, onClose, product, onSave }: ProductNegotiationModalProps) {
     const [negotiationType, setNegotiationType] = useState<'price' | 'percentage'>('price')
     const [negotiatedPrice, setNegotiatedPrice] = useState<number>(0)
+    const [currentPrice, setCurrentPrice] = useState<number>(0)
     const [percentage, setPercentage] = useState<number>(0)
     const [consumption, setConsumption] = useState<number>(0)
     const [months, setMonths] = useState<number>(12) // Default to 1 year?
@@ -31,6 +32,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
 
     useEffect(() => {
         if (product) {
+            setCurrentPrice(product.precio_actual || 0)
             setNegotiatedPrice(product.precio_negociado || product.precio_actual)
             setConsumption(product.cantidad_mensual || 0)
             setSavingsType(product.tipo || 'Ahorro')
@@ -48,25 +50,25 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
     // Effect to update price when percentage changes
     useEffect(() => {
         if (negotiationType === 'percentage' && product) {
-            const savingsAmount = product.precio_actual * (percentage / 100)
-            const newPrice = product.precio_actual - savingsAmount
+            const savingsAmount = currentPrice * (percentage / 100)
+            const newPrice = currentPrice - savingsAmount
             setNegotiatedPrice(newPrice > 0 ? newPrice : 0)
         }
-    }, [percentage, negotiationType, product])
+    }, [percentage, negotiationType, product, currentPrice])
 
     // Effect to update percentage when price changes manually
     useEffect(() => {
-        if (negotiationType === 'price' && product && product.precio_actual > 0) {
-            const savingsAmount = product.precio_actual - negotiatedPrice
-            const newPercent = (savingsAmount / product.precio_actual) * 100
+        if (negotiationType === 'price' && product && currentPrice > 0) {
+            const savingsAmount = currentPrice - negotiatedPrice
+            const newPercent = (savingsAmount / currentPrice) * 100
             setPercentage(newPercent)
         }
-    }, [negotiatedPrice, negotiationType, product])
+    }, [negotiatedPrice, negotiationType, product, currentPrice])
 
     if (!isOpen || !product) return null
 
     // Calculations
-    const unitSavings = product.precio_actual - negotiatedPrice
+    const unitSavings = currentPrice - negotiatedPrice
     const totalSavings = unitSavings * consumption * months
 
     const formatCurrency = (value: number) => {
@@ -76,6 +78,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
     const handleSave = () => {
         onSave({
             ...product,
+            precio_actual: currentPrice,
             precio_negociado: negotiatedPrice,
             cantidad_mensual: consumption,
             tipo: savingsType,
@@ -116,9 +119,17 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                     <label className="text-xs text-slate-500 font-medium block mb-1">ID Producto</label>
                                     <div className="font-mono text-slate-600 bg-white px-3 py-1 rounded border border-slate-200 inline-block">#{product.id}</div>
                                 </div>
-                                <div className="text-right">
+                                <div>
                                     <label className="text-xs text-slate-500 font-medium block mb-1">Precio Actual (Unitario)</label>
-                                    <div className="font-bold text-slate-900 text-lg">{formatCurrency(product.precio_actual)}</div>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                        <input
+                                            type="number"
+                                            value={currentPrice}
+                                            onChange={(e) => setCurrentPrice(parseFloat(e.target.value) || 0)}
+                                            className="w-full pl-7 pr-3 py-1 bg-white border border-[#254153]/20 rounded focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-slate-900 text-lg"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -179,7 +190,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                     </div>
                                     {negotiationType === 'percentage' && (
                                         <p className="text-xs text-slate-500 mt-1 text-right">
-                                            Equivale a: <span className="font-semibold text-[#254153]">{formatCurrency(product.precio_actual * (1 - percentage / 100))}</span>
+                                            Equivale a: <span className="font-semibold text-[#254153]">{formatCurrency(currentPrice * (1 - percentage / 100))}</span>
                                         </p>
                                     )}
                                 </div>

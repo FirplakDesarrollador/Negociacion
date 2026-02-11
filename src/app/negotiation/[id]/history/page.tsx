@@ -19,6 +19,7 @@ interface HistoryItem {
     precio_anterior: number
     precio_nuevo: number
     ahorro_generado: number
+    tipo?: string
     Neg_productos: {
         descripcion: string
         tipo: string
@@ -352,8 +353,9 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="block font-medium text-slate-800">{item.Neg_productos?.descripcion || 'Producto Eliminado'}</span>
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 mt-1">
-                                                        {item.Neg_productos?.tipo || 'N/A'}
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1 ${(item.tipo || item.Neg_productos?.tipo || 'Ahorro') === 'Ahorro' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                        }`}>
+                                                        {item.tipo || item.Neg_productos?.tipo || 'Ahorro'}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-slate-500 font-mono">

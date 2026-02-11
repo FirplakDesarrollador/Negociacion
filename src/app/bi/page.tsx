@@ -43,6 +43,8 @@ export default function BIVisualsPage() {
 
     const [dateFrom, setDateFrom] = useState(startOfYear)
     const [dateTo, setDateTo] = useState(today)
+    const [selectedSupplier, setSelectedSupplier] = useState('All')
+    const [selectedProduct, setSelectedProduct] = useState('All')
 
     // Data
     const [history, setHistory] = useState<any[]>([])
@@ -78,9 +80,31 @@ export default function BIVisualsPage() {
     const filteredData = useMemo(() => {
         return history.filter(item => {
             const date = item.fecha_cambio.split('T')[0]
-            return date >= dateFrom && date <= dateTo
+            const supplierMatch = selectedSupplier === 'All' ||
+                (item.supplier_name || item.Neg_productos?.supplier_name) === selectedSupplier
+            const productMatch = selectedProduct === 'All' ||
+                item.Neg_productos?.descripcion === selectedProduct
+
+            return date >= dateFrom && date <= dateTo && supplierMatch && productMatch
         })
-    }, [history, dateFrom, dateTo])
+    }, [history, dateFrom, dateTo, selectedSupplier, selectedProduct])
+
+    const filterOptions = useMemo(() => {
+        const suppliers = new Set<string>()
+        const products = new Set<string>()
+
+        history.forEach(item => {
+            const sName = item.supplier_name || item.Neg_productos?.supplier_name
+            const pDesc = item.Neg_productos?.descripcion
+            if (sName) suppliers.add(sName)
+            if (pDesc) products.add(pDesc)
+        })
+
+        return {
+            suppliers: Array.from(suppliers).sort(),
+            products: Array.from(products).sort()
+        }
+    }, [history])
 
     const kpis = useMemo(() => {
         let savingsValue = 0
@@ -89,7 +113,8 @@ export default function BIVisualsPage() {
         let avoidanceCount = 0
 
         filteredData.forEach(item => {
-            if (item.Neg_productos?.tipo === 'Ahorro') {
+            const currentItemTipo = item.tipo || item.Neg_productos?.tipo || 'Ahorro'
+            if (currentItemTipo === 'Ahorro') {
                 savingsValue += item.ahorro_generado || 0
                 savingsCount++
             } else {
@@ -132,7 +157,8 @@ export default function BIVisualsPage() {
                 months[monthKey] = { name: monthName, ahorro: 0, avoidance: 0 }
             }
 
-            if (item.Neg_productos?.tipo === 'Ahorro') {
+            const currentItemTipo = item.tipo || item.Neg_productos?.tipo || 'Ahorro'
+            if (currentItemTipo === 'Ahorro') {
                 months[monthKey].ahorro += item.ahorro_generado || 0
             } else {
                 months[monthKey].avoidance += item.ahorro_generado || 0
@@ -161,7 +187,7 @@ export default function BIVisualsPage() {
             new Date(item.fecha_cambio).toLocaleDateString('es-CO'),
             item.supplier_name || item.Neg_productos?.supplier_name || 'N/A',
             item.Neg_productos?.descripcion || 'Sin descripción',
-            item.Neg_productos?.tipo || 'Ahorro',
+            item.tipo || item.Neg_productos?.tipo || 'Ahorro',
             item.precio_anterior,
             item.precio_nuevo,
             item.ahorro_generado
@@ -255,7 +281,7 @@ export default function BIVisualsPage() {
 
                 {/* Filters Row */}
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row items-end gap-6">
-                    <div className="flex-1 w-full">
+                    <div className="flex-1 w-full max-w-[200px]">
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                             <Calendar className="w-3 h-3" /> Desde
                         </label>
@@ -263,10 +289,10 @@ export default function BIVisualsPage() {
                             type="date"
                             value={dateFrom}
                             onChange={(e) => setDateFrom(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#254153]/10"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10"
                         />
                     </div>
-                    <div className="flex-1 w-full">
+                    <div className="flex-1 w-full max-w-[200px]">
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                             <Calendar className="w-3 h-3" /> Hasta
                         </label>
@@ -274,14 +300,40 @@ export default function BIVisualsPage() {
                             type="date"
                             value={dateTo}
                             onChange={(e) => setDateTo(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#254153]/10"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10"
                         />
                     </div>
+                    <div className="flex-[1.5] w-full">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <Users className="w-3 h-3" /> Proveedor
+                        </label>
+                        <select
+                            value={selectedSupplier}
+                            onChange={(e) => setSelectedSupplier(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10 appearance-none"
+                        >
+                            <option value="All">Todos los proveedores</option>
+                            {filterOptions.suppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex-[2] w-full">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <Activity className="w-3 h-3" /> Producto
+                        </label>
+                        <select
+                            value={selectedProduct}
+                            onChange={(e) => setSelectedProduct(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10 appearance-none"
+                        >
+                            <option value="All">Todos los productos</option>
+                            {filterOptions.products.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
                     <div className="shrink-0 w-full md:w-auto">
-                        <div className="p-3 bg-indigo-50 text-indigo-700 rounded-xl flex items-center gap-3">
-                            <Filter className="w-5 h-5" />
-                            <div className="text-sm">
-                                <span className="font-bold">{filteredData.length}</span> registros filtrados
+                        <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl flex items-center gap-3">
+                            <Filter className="w-4 h-4" />
+                            <div className="text-xs">
+                                <span className="font-bold">{filteredData.length}</span> registros
                             </div>
                         </div>
                     </div>
@@ -337,80 +389,110 @@ export default function BIVisualsPage() {
                 </div>
 
                 {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
 
-                    {/* Monthly Trend Chart */}
-                    <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-                        <div className="flex items-center justify-between mb-8">
+                    {/* Monthly Trend - Ahorro */}
+                    <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="flex items-center justify-between mb-2">
                             <div>
-                                <h3 className="text-lg font-bold text-[#254153]">Tendencia Mensual</h3>
-                                <p className="text-sm text-slate-400">Evolución de ahorros vs avoidance</p>
+                                <h3 className="text-lg font-bold text-[#254153]">Ahorros Mensuales</h3>
+                                <p className="text-sm text-slate-400">Volumen financiero de ahorro</p>
                             </div>
+                        </div>
+                        <div className="mb-6">
+                            <span className="text-2xl font-black text-emerald-600">{formatCurrency(kpis.savingsValue)}</span>
+                            <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-tighter">Total en el periodo</span>
                         </div>
                         <div className="h-[300px] w-full">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={monthlyTrendData}>
+                                <BarChart data={monthlyTrendData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
-                                    <YAxis hide domain={['auto', 'auto']} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                                        formatter={(v: any) => [formatCurrency(v), '']}
-                                    />
-                                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="ahorro"
-                                        name="Ahorro"
-                                        stroke="#10b981"
-                                        strokeWidth={3}
-                                        dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="avoidance"
-                                        name="Avoidance"
-                                        stroke="#f59e0b"
-                                        strokeWidth={3}
-                                        dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Top Suppliers Ranking */}
-                    <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h3 className="text-lg font-bold text-[#254153]">Top 5 Proveedores</h3>
-                                <p className="text-sm text-slate-400">Ranking por ahorro generado</p>
-                            </div>
-                            <div className="p-2 bg-indigo-50 rounded-lg">
-                                <ArrowUpRight className="w-5 h-5 text-indigo-600" />
-                            </div>
-                        </div>
-                        <div className="h-[300px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={topSuppliersData} layout="vertical" margin={{ left: 40 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                                    <XAxis type="number" hide />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} dy={10} />
                                     <YAxis
-                                        type="category"
-                                        dataKey="name"
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: '#475569', fontSize: 11, fontWeight: 500 }}
-                                        width={100}
+                                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                        tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
                                     />
                                     <Tooltip
                                         cursor={{ fill: '#f8fafc' }}
                                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                                         formatter={(v: any) => [formatCurrency(v), 'Ahorro']}
                                     />
-                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={25}>
+                                    <Bar dataKey="ahorro" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Monthly Trend - Avoidance */}
+                    <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-1 h-full bg-amber-500 opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="text-lg font-bold text-[#254153]">Avoidance Mensual</h3>
+                                <p className="text-sm text-slate-400">Volumen financiero detectado</p>
+                            </div>
+                        </div>
+                        <div className="mb-6">
+                            <span className="text-2xl font-black text-amber-600">{formatCurrency(kpis.avoidanceValue)}</span>
+                            <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-tighter">Total en el periodo</span>
+                        </div>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={monthlyTrendData}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 10 }} dy={10} />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                        tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: '#f8fafc' }}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                        formatter={(v: any) => [formatCurrency(v), 'Avoidance']}
+                                    />
+                                    <Bar dataKey="avoidance" fill="#f59e0b" radius={[4, 4, 0, 0]} barSize={20} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Top Suppliers Ranking */}
+                    <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-1 h-full bg-[#254153] opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                        <div className="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 className="text-lg font-bold text-[#254153]">Top 5 Proveedores</h3>
+                                <p className="text-sm text-slate-400">Ranking por ahorro total</p>
+                            </div>
+                        </div>
+                        <div className="mb-6">
+                            <span className="text-2xl font-black text-[#254153]">{formatCurrency(kpis.savingsValue + kpis.avoidanceValue)}</span>
+                            <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-tighter">Impacto total acumulado</span>
+                        </div>
+                        <div className="h-[300px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={topSuppliersData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                                    <XAxis type="number" tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 9 }} />
+                                    <YAxis
+                                        type="category"
+                                        dataKey="name"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#475569', fontSize: 10, fontWeight: 500 }}
+                                        width={80}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: '#f8fafc' }}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+                                        formatter={(v: any) => [formatCurrency(v), 'Ahorro']}
+                                    />
+                                    <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={15}>
                                         {topSuppliersData.map((_, index) => (
                                             <Cell key={`cell-${index}`} fill={index === 0 ? '#254153' : '#64748b'} />
                                         ))}
@@ -435,6 +517,7 @@ export default function BIVisualsPage() {
                                     <th className="px-6 py-4">Fecha</th>
                                     <th className="px-6 py-4">Proveedor</th>
                                     <th className="px-6 py-4">Producto</th>
+                                    <th className="px-6 py-4">Tipo</th>
                                     <th className="px-6 py-4 text-right">Ahorro</th>
                                 </tr>
                             </thead>
@@ -450,8 +533,14 @@ export default function BIVisualsPage() {
                                         <td className="px-6 py-4 text-sm text-slate-600">
                                             {item.Neg_productos?.descripcion}
                                         </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${(item.tipo || item.Neg_productos?.tipo || 'Ahorro') === 'Ahorro' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                }`}>
+                                                {item.tipo || item.Neg_productos?.tipo || 'Ahorro'}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 text-right">
-                                            <span className={`text-sm font-bold ${item.Neg_productos?.tipo === 'Ahorro' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                                            <span className={`text-sm font-bold ${(item.tipo || item.Neg_productos?.tipo || 'Ahorro') === 'Ahorro' ? 'text-emerald-600' : 'text-amber-600'}`}>
                                                 {formatCurrency(item.ahorro_generado)}
                                             </span>
                                         </td>

@@ -11,7 +11,8 @@ import {
     Calculator,
     TrendingDown,
     ShieldCheck,
-    AlertCircle
+    AlertCircle,
+    Search
 } from 'lucide-react'
 
 import ProductNegotiationModal from '@/components/ProductNegotiationModal'
@@ -30,6 +31,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState<any>(null)
+
+    // Search and Filter State
+    const [searchTerm, setSearchTerm] = useState('')
 
     // Totals
     const [totalSavings, setTotalSavings] = useState(0)
@@ -231,6 +235,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         precio_anterior: product.precio_actual,
                         precio_nuevo: product.precio_negociado,
                         ahorro_generado: product.ahorro_total,
+                        tipo: product.tipo,
                     })
 
                 if (historyError) console.error('Error saving history for', product.id, historyError)
@@ -256,6 +261,11 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
     const formatPercentage = (value: number) => {
         return `${value.toFixed(1)}%`
     }
+
+    const filteredProducts = products.filter(product =>
+        product.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.codigo_articulo?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-24">
@@ -299,9 +309,21 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
                 {/* Products Section */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-                    <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <h3 className="text-xl font-bold text-[#254153]">Productos y Servicios</h3>
-                        <button className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
+                    <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                            <h3 className="text-xl font-bold text-[#254153]">Productos y Servicios</h3>
+                            <div className="relative w-full sm:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Buscar producto o código..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] transition-all"
+                                />
+                            </div>
+                        </div>
+                        <button className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center">
                             <Calculator className="w-4 h-4" />
                             Negociador Masivo
                         </button>
@@ -321,7 +343,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {products.map((product) => (
+                                {filteredProducts.map((product) => (
                                     <tr
                                         key={product.id}
                                         onClick={() => handleOpenModal(product)}
