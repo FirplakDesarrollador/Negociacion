@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 
 import ProductNegotiationModal from '@/components/ProductNegotiationModal'
+import BulkNegotiatorModal from '@/components/BulkNegotiatorModal'
 
 
 export default function NegotiationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,6 +31,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState<any>(null)
 
     // Search and Filter State
@@ -182,6 +184,28 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance' }) => {
+        const newList = products.map(product => {
+            const ahorroUnitario = product.precio_actual * (settings.percentage / 100)
+            const precio_negociado = product.precio_actual - ahorroUnitario
+            const ahorroTotal = ahorroUnitario * product.cantidad_mensual * (product.months || 12)
+
+            return {
+                ...product,
+                precio_negociado: precio_negociado > 0 ? precio_negociado : 0,
+                tipo: settings.type,
+                ahorro_unitario: ahorroUnitario,
+                ahorro_porcentaje: settings.percentage,
+                ahorro_total: ahorroTotal,
+                isDirty: true
+            }
+        })
+
+        setProducts(newList)
+        calculateTotals(newList)
+        setIsBulkModalOpen(false)
+    }
+
     const handleGlobalSave = async () => {
         // Filter products that have been negotiated (price changed or explicitly marked via modal)
         const changedProducts = products.filter(p => p.isDirty || p.precio_negociado !== p.precio_actual)
@@ -276,6 +300,12 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 onSave={handleSaveProduct}
             />
 
+            <BulkNegotiatorModal
+                isOpen={isBulkModalOpen}
+                onClose={() => setIsBulkModalOpen(false)}
+                onApply={handleApplyBulk}
+            />
+
             {/* Navbar */}
             <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -323,7 +353,10 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                 />
                             </div>
                         </div>
-                        <button className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center">
+                        <button
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+                        >
                             <Calculator className="w-4 h-4" />
                             Negociador Masivo
                         </button>
