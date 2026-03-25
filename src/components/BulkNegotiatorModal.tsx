@@ -7,18 +7,20 @@ import {
     ShieldCheck,
     TrendingDown,
     Zap,
-    AlertCircle
+    AlertCircle,
+    DollarSign
 } from 'lucide-react'
 
 interface BulkNegotiatorModalProps {
     isOpen: boolean
     onClose: () => void
-    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance' }) => void
+    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', targetPrice?: number }) => void
 }
 
 export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNegotiatorModalProps) {
     const [percentage, setPercentage] = useState<number>(0)
     const [savingsType, setSavingsType] = useState<'Ahorro' | 'Avoidance'>('Ahorro')
+    const [targetPrice, setTargetPrice] = useState<string>('')
 
     if (!isOpen) return null
 
@@ -39,16 +41,31 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                         </div>
                         <h2 className="text-xl font-bold">Negociador Masivo</h2>
                     </div>
-                    <p className="text-blue-100 text-sm">Aplica condiciones a todos los productos del proveedor simultáneamente.</p>
+                    <p className="text-blue-100 text-sm">Aplica % simultaneamente a todos los productos de este proveedor.</p>
                 </div>
 
                 <div className="p-6 space-y-6">
                     {/* Percentage Info */}
                     <div>
-                        <label className="text-sm font-semibold text-slate-700 block mb-2 flex items-center gap-2">
-                            <Percent className="w-4 h-4 text-[#254153]" />
-                            Porcentaje de Ahorro Global
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                <Percent className="w-4 h-4 text-[#254153]" />
+                                de Ahorro Global
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <label className="text-xs font-semibold text-slate-500">Precio Actual:</label>
+                                <div className="relative w-28">
+                                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                                    <input
+                                        type="number"
+                                        value={targetPrice}
+                                        onChange={(e) => setTargetPrice(e.target.value)}
+                                        className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-sm text-[#254153]"
+                                        placeholder="Opcional"
+                                    />
+                                </div>
+                            </div>
+                        </div>
                         <div className="relative">
                             <input
                                 type="number"
@@ -59,7 +76,7 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             />
                             <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">Se aplicará sobre el precio actual de cada producto</p>
+                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">Se calcula sobre el precio actual de cada producto</p>
                     </div>
 
                     {/* Savings Type */}
@@ -106,7 +123,7 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             Cancelar
                         </button>
                         <button
-                            onClick={() => onApply({ percentage, type: savingsType })}
+                            onClick={() => onApply({ percentage, type: savingsType, targetPrice: targetPrice ? parseFloat(targetPrice) : undefined })}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"
                         >
                             Aplicar a Todo

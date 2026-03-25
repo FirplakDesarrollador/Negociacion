@@ -9,7 +9,8 @@ import {
     TrendingDown,
     TrendingUp,
     FileText,
-    Building2
+    Building2,
+    Home
 } from 'lucide-react'
 
 // Define interfaces for history data
@@ -244,6 +245,15 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                 <h1 className="text-lg font-bold text-[#254153]">Historial de Negociaciones</h1>
                                 <p className="text-xs text-slate-500">Registro de cambios de precios</p>
                             </div>
+                            <div className="h-8 w-px bg-slate-200 mx-2"></div>
+                            <button
+                                onClick={() => router.push('/')}
+                                className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-[#254153] flex items-center gap-2"
+                                title="Ir al Inicio"
+                            >
+                                <Home className="w-5 h-5" />
+                                <span className="text-sm font-medium hidden sm:inline">Inicio</span>
+                            </button>
                         </div>
                     </div>
                 </div>

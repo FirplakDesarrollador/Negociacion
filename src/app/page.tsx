@@ -52,15 +52,26 @@ export default function Home() {
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="bg-[#254153] p-2.5 rounded-lg shadow-md">
-                <Bot className="w-6 h-6 text-white" />
+            {/* Left Section: Logo + Button */}
+            <div className="flex items-center gap-8">
+              {/* Logo */}
+              <div className="flex items-center gap-3">
+                <div className="bg-[#254153] p-2.5 rounded-lg shadow-md">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-xl text-[#254153] leading-none tracking-tight">Negotiation<span className="text-blue-600">Pro</span></span>
+                  <span className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">PLATAFORMA CORPORATIVA</span>
+                </div>
               </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-xl text-[#254153] leading-none tracking-tight">Negotiation<span className="text-blue-600">Pro</span></span>
-                <span className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">PLATAFORMA CORPORATIVA</span>
-              </div>
+
+              {/* AlejoF Prueba Button */}
+              <button 
+                onClick={() => alert("AlejoF Prueba clickeado")}
+                className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-2 px-6 rounded-lg shadow-sm transition-colors text-sm"
+              >
+                AlejoF Prueba
+              </button>
             </div>
 
             {/* Usuario y Logout */}
