@@ -18,9 +18,42 @@ interface BulkNegotiatorModalProps {
 }
 
 export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNegotiatorModalProps) {
-    const [percentage, setPercentage] = useState<number>(0)
+    const [percentage, setPercentage] = useState<string>('0')
     const [savingsType, setSavingsType] = useState<'Ahorro' | 'Avoidance'>('Ahorro')
-    const [targetPrice, setTargetPrice] = useState<string>('')
+    const [basePrice, setBasePrice] = useState<string>('')
+    const [negotiatedPrice, setNegotiatedPrice] = useState<string>('')
+
+    const handleBasePriceChange = (val: string) => {
+        setBasePrice(val)
+        const bp = parseFloat(val)
+        const perc = parseFloat(percentage)
+        if (!isNaN(bp) && bp > 0 && !isNaN(perc)) {
+            const calculated = bp - (bp * (perc / 100))
+            setNegotiatedPrice(calculated.toString())
+        } else {
+            setNegotiatedPrice('')
+        }
+    }
+
+    const handlePercentageChange = (val: string) => {
+        setPercentage(val)
+        const perc = parseFloat(val)
+        const bp = parseFloat(basePrice)
+        if (!isNaN(bp) && bp > 0 && !isNaN(perc)) {
+            const calculated = bp - (bp * (perc / 100))
+            setNegotiatedPrice(calculated.toString())
+        }
+    }
+
+    const handleNegotiatedPriceChange = (val: string) => {
+        setNegotiatedPrice(val)
+        const np = parseFloat(val)
+        const bp = parseFloat(basePrice)
+        if (!isNaN(np) && !isNaN(bp) && bp > 0) {
+            const calculatedPerc = ((bp - np) / bp) * 100
+            setPercentage(calculatedPerc.toFixed(2))
+        }
+    }
 
     if (!isOpen) return null
 
@@ -41,42 +74,58 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                         </div>
                         <h2 className="text-xl font-bold">Negociador Masivo</h2>
                     </div>
-                    <p className="text-blue-100 text-sm">Aplica % simultaneamente a todos los productos de este proveedor.</p>
+                    <p className="text-blue-100 text-sm">Aplica reglas simultaneamente a todos los productos.</p>
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Percentage Info */}
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <Percent className="w-4 h-4 text-[#254153]" />
-                                de Ahorro Global
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-semibold text-slate-500">Precio Actual:</label>
-                                <div className="relative w-28">
-                                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                    {/* Pricing Inputs */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Precio Base</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
                                         type="number"
-                                        value={targetPrice}
-                                        onChange={(e) => setTargetPrice(e.target.value)}
-                                        className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-sm text-[#254153]"
-                                        placeholder="Opcional"
+                                        value={basePrice}
+                                        onChange={(e) => handleBasePriceChange(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-slate-800"
+                                        placeholder="Automático (por item)"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Precio Negociado</label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="number"
+                                        value={negotiatedPrice}
+                                        onChange={(e) => handleNegotiatedPriceChange(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-emerald-600"
+                                        placeholder="Calculado"
                                     />
                                 </div>
                             </div>
                         </div>
-                        <div className="relative">
-                            <input
-                                type="number"
-                                value={percentage}
-                                onChange={(e) => setPercentage(parseFloat(e.target.value) || 0)}
-                                className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-lg text-[#254153]"
-                                placeholder="0.0"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+
+                        <div>
+                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-2">
+                                <Percent className="w-4 h-4 text-[#254153]" />
+                                Porcentaje de Ahorro
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    value={percentage}
+                                    onChange={(e) => handlePercentageChange(e.target.value)}
+                                    className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-lg text-[#254153]"
+                                    placeholder="0.0"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-wider">Si no se especifica Precio Base, el % se aplica al precio actual de cada ítem.</p>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">Se calcula sobre el precio actual de cada producto</p>
                     </div>
 
                     {/* Savings Type */}
@@ -123,7 +172,7 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             Cancelar
                         </button>
                         <button
-                            onClick={() => onApply({ percentage, type: savingsType, targetPrice: targetPrice ? parseFloat(targetPrice) : undefined })}
+                            onClick={() => onApply({ percentage: parseFloat(percentage) || 0, type: savingsType, targetPrice: basePrice ? parseFloat(basePrice) : undefined })}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"
                         >
                             Aplicar a Todo
