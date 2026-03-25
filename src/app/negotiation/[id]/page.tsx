@@ -185,17 +185,22 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', targetPrice?: number }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance' }) => {
         const newList = products.map(product => {
-            const basePriceForCalc = settings.targetPrice !== undefined && settings.targetPrice > 0 ? settings.targetPrice : product.precio_actual
+            const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
-            const precio_negociado = basePriceForCalc - ahorroUnitario
+
+            let resultPrecioNegociado = basePriceForCalc - ahorroUnitario
+            if (settings.type === 'Avoidance') {
+                resultPrecioNegociado = basePriceForCalc
+            }
+
             const ahorroTotal = ahorroUnitario * product.cantidad_mensual * (product.months || 12)
 
             return {
                 ...product,
-                precio_actual: basePriceForCalc, // Update the base price to the custom global one if provided
-                precio_negociado: precio_negociado > 0 ? precio_negociado : 0,
+                precio_actual: basePriceForCalc,
+                precio_negociado: resultPrecioNegociado > 0 ? resultPrecioNegociado : 0,
                 tipo: settings.type,
                 ahorro_unitario: ahorroUnitario,
                 ahorro_porcentaje: settings.percentage,
