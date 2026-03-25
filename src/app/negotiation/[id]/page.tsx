@@ -185,14 +185,16 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance' }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', targetPrice?: number }) => {
         const newList = products.map(product => {
-            const ahorroUnitario = product.precio_actual * (settings.percentage / 100)
-            const precio_negociado = product.precio_actual - ahorroUnitario
+            const basePriceForCalc = settings.targetPrice !== undefined && settings.targetPrice > 0 ? settings.targetPrice : product.precio_actual
+            const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
+            const precio_negociado = basePriceForCalc - ahorroUnitario
             const ahorroTotal = ahorroUnitario * product.cantidad_mensual * (product.months || 12)
 
             return {
                 ...product,
+                precio_actual: basePriceForCalc, // Update the base price to the custom global one if provided
                 precio_negociado: precio_negociado > 0 ? precio_negociado : 0,
                 tipo: settings.type,
                 ahorro_unitario: ahorroUnitario,
@@ -319,8 +321,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                 <ArrowLeft className="w-5 h-5" />
                             </button>
                             <div>
-                                <h1 className="text-lg font-bold text-[#254153]">Gestión de Proveedores</h1>
-                                <p className="text-xs text-slate-500">Negociación activa</p>
+                                <h1 className="text-lg font-bold text-[#254153]">Gestión de Proveedor</h1>
+                                <p className="text-xs text-slate-500">Negociador activo</p>
                             </div>
                             <div className="h-8 w-px bg-slate-200 mx-2"></div>
                             <button
@@ -344,14 +346,14 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 {/* Supplier Header Information */}
                 <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm mb-6 text-center">
                     <h2 className="text-3xl font-bold text-[#254153] mb-2">{supplierName}</h2>
-                    <p className="text-slate-500 font-medium">Gestión de productos y negociación de precios</p>
+                    <p className="text-slate-500 font-medium">Gestión de negociación de precios</p>
                 </div>
 
                 {/* Products Section */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
                     <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-                            <h3 className="text-xl font-bold text-[#254153]">Productos y Servicios</h3>
+                            <h3 className="text-xl font-bold text-[#254153]">Productos o Servicios</h3>
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                 <input
