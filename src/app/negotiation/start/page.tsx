@@ -10,7 +10,8 @@ import {
     ArrowRight,
     ArrowLeft,
     Filter,
-    Loader2
+    Loader2,
+    Home
 } from 'lucide-react'
 
 export default function SupplierSelectionPage() {
@@ -77,6 +78,15 @@ export default function SupplierSelectionPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <h1 className="text-xl font-bold text-[#254153]">Nueva Negociación</h1>
+                        <div className="h-8 w-px bg-slate-200 mx-2"></div>
+                        <button
+                            onClick={() => router.push('/')}
+                            className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-[#254153] flex items-center gap-2"
+                            title="Ir al Inicio"
+                        >
+                            <Home className="w-5 h-5" />
+                            <span className="text-sm font-medium hidden sm:inline">Inicio</span>
+                        </button>
                     </div>
                 </div>
             </nav>
