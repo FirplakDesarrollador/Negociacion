@@ -14,17 +14,33 @@ import {
     interface BulkNegotiatorModalProps {
     isOpen: boolean
     onClose: () => void
-    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', consumption?: number, months?: number }) => void
+    products: any[]
+    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number }) => void
 }
 
-export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNegotiatorModalProps) {
+export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply }: BulkNegotiatorModalProps) {
     const [savingsType, setSavingsType] = useState<'Ahorro' | 'Avoidance'>('Ahorro')
     const [basePercent, setBasePercent] = useState<string>('')
     const [negotiatedPercent, setNegotiatedPercent] = useState<string>('')
     const [consumption, setConsumption] = useState<string>('')
+    const [skuConsumptions, setSkuConsumptions] = useState<Record<string, string>>({})
     const [months, setMonths] = useState<string>('')
 
     const calculatedPercentage = parseFloat(((parseFloat(basePercent) || 0) - (parseFloat(negotiatedPercent) || 0)).toFixed(2))
+
+    const handleMasterConsumptionChange = (val: string) => {
+        setConsumption(val)
+        const newConsumptions: Record<string, string> = {}
+        products?.forEach(p => {
+            newConsumptions[p.id] = val
+        })
+        setSkuConsumptions(newConsumptions)
+    }
+
+    const handleSkuConsumptionChange = (id: string, val: string) => {
+        setSkuConsumptions(prev => ({ ...prev, [id]: val }))
+        setConsumption('')
+    }
 
     if (!isOpen) return null
 
@@ -101,13 +117,13 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                         {/* Consumption Inputs */}
                         <div className="flex gap-4 pt-2">
                             <div className="flex-1">
-                                <label className="text-sm font-semibold text-slate-700 block mb-1">Consumo Mensual</label>
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Consumo Mensual Maestro</label>
                                 <input
                                     type="number"
                                     value={consumption}
-                                    onChange={(e) => setConsumption(e.target.value)}
+                                    onChange={(e) => handleMasterConsumptionChange(e.target.value)}
                                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
-                                    placeholder="Opcional"
+                                    placeholder="Agrega a todos..."
                                 />
                             </div>
                             <div className="flex-1">
@@ -158,6 +174,37 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                         </p>
                     </div>
 
+                    {/* SKU List */}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                        <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Detalle del Consumo Mensual por SKU ({products?.length || 0})</h3>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 p-2">
+                            {products?.map(product => (
+                                <div key={product.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors gap-4">
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                                                {product.codigo_articulo || 'N/A'}
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-700 truncate">{product.descripcion}</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-24 shrink-0 flex flex-col gap-1">
+                                        <input
+                                            type="number"
+                                            value={skuConsumptions[product.id] ?? ''}
+                                            onChange={(e) => handleSkuConsumptionChange(product.id, e.target.value)}
+                                            className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all text-xs font-medium text-slate-800 text-center"
+                                            placeholder={String(product.cantidad_mensual)}
+                                        />
+                                        <span className="text-[8px] text-slate-400 text-center">Original: {product.cantidad_mensual}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                         <button
@@ -167,12 +214,22 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             Cancelar
                         </button>
                         <button
-                            onClick={() => onApply({ 
-                                percentage: calculatedPercentage, 
-                                type: savingsType,
-                                consumption: consumption ? parseFloat(consumption) : undefined,
-                                months: months ? parseFloat(months) : undefined 
-                            })}
+                            onClick={() => {
+                                const parsedConsumptions: Record<string, number> = {}
+                                products?.forEach(p => {
+                                    const val = skuConsumptions[p.id]
+                                    if (val && !isNaN(parseFloat(val))) {
+                                        parsedConsumptions[p.id] = parseFloat(val)
+                                    }
+                                })
+
+                                onApply({ 
+                                    percentage: calculatedPercentage, 
+                                    type: savingsType,
+                                    skuConsumptions: parsedConsumptions,
+                                    months: months ? parseFloat(months) : undefined 
+                                })
+                            }}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"
                         >
                             Aplicar a Todo

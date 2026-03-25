@@ -185,7 +185,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', consumption?: number, months?: number }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number }) => {
         const newList = products.map(product => {
             const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
@@ -193,7 +193,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             // Let precio_negociado capture the difference for History tracking even in Avoidance
             const resultPrecioNegociado = basePriceForCalc - ahorroUnitario
 
-            const cantMensual = settings.consumption !== undefined && settings.consumption > 0 ? settings.consumption : product.cantidad_mensual
+            const skuVal = settings.skuConsumptions[product.id]
+            const cantMensual = skuVal !== undefined && skuVal >= 0 ? skuVal : product.cantidad_mensual
+            
             const numMonths = settings.months !== undefined && settings.months > 0 ? settings.months : (product.months || 12)
 
             const ahorroTotal = ahorroUnitario * cantMensual * numMonths
@@ -314,6 +316,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             <BulkNegotiatorModal
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
+                products={products}
                 onApply={handleApplyBulk}
             />
 
