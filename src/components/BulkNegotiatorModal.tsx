@@ -14,13 +14,15 @@ import {
     interface BulkNegotiatorModalProps {
     isOpen: boolean
     onClose: () => void
-    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance' }) => void
+    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', consumption?: number, months?: number }) => void
 }
 
 export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNegotiatorModalProps) {
     const [savingsType, setSavingsType] = useState<'Ahorro' | 'Avoidance'>('Ahorro')
     const [basePercent, setBasePercent] = useState<string>('')
     const [negotiatedPercent, setNegotiatedPercent] = useState<string>('')
+    const [consumption, setConsumption] = useState<string>('')
+    const [months, setMonths] = useState<string>('')
 
     const calculatedPercentage = parseFloat(((parseFloat(basePercent) || 0) - (parseFloat(negotiatedPercent) || 0)).toFixed(2))
 
@@ -78,7 +80,7 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             </div>
                         </div>
 
-                        <div>
+                         <div>
                             <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-2">
                                 <Percent className="w-4 h-4 text-emerald-600" />
                                 Porcentaje de Ahorro
@@ -94,6 +96,30 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-emerald-500">%</span>
                             </div>
                             <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-wider">Resultado calculado automáticamente y aplicado al precio actual.</p>
+                        </div>
+
+                        {/* Consumption Inputs */}
+                        <div className="flex gap-4 pt-2">
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Consumo Mensual</label>
+                                <input
+                                    type="number"
+                                    value={consumption}
+                                    onChange={(e) => setConsumption(e.target.value)}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
+                                    placeholder="Opcional"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Tiempo (Meses)</label>
+                                <input
+                                    type="number"
+                                    value={months}
+                                    onChange={(e) => setMonths(e.target.value)}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
+                                    placeholder="Opcional"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -141,7 +167,12 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             Cancelar
                         </button>
                         <button
-                            onClick={() => onApply({ percentage: calculatedPercentage, type: savingsType })}
+                            onClick={() => onApply({ 
+                                percentage: calculatedPercentage, 
+                                type: savingsType,
+                                consumption: consumption ? parseFloat(consumption) : undefined,
+                                months: months ? parseFloat(months) : undefined 
+                            })}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"
                         >
                             Aplicar a Todo

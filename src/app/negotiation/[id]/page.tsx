@@ -185,17 +185,18 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance' }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', consumption?: number, months?: number }) => {
         const newList = products.map(product => {
             const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
 
-            let resultPrecioNegociado = basePriceForCalc - ahorroUnitario
-            if (settings.type === 'Avoidance') {
-                resultPrecioNegociado = basePriceForCalc
-            }
+            // Let precio_negociado capture the difference for History tracking even in Avoidance
+            const resultPrecioNegociado = basePriceForCalc - ahorroUnitario
 
-            const ahorroTotal = ahorroUnitario * product.cantidad_mensual * (product.months || 12)
+            const cantMensual = settings.consumption !== undefined && settings.consumption > 0 ? settings.consumption : product.cantidad_mensual
+            const numMonths = settings.months !== undefined && settings.months > 0 ? settings.months : (product.months || 12)
+
+            const ahorroTotal = ahorroUnitario * cantMensual * numMonths
 
             return {
                 ...product,
@@ -205,6 +206,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 ahorro_unitario: ahorroUnitario,
                 ahorro_porcentaje: settings.percentage,
                 ahorro_total: ahorroTotal,
+                cantidad_mensual: cantMensual,
+                months: numMonths,
                 isDirty: true
             }
         })
