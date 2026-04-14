@@ -11,16 +11,36 @@ import {
     DollarSign
 } from 'lucide-react'
 
-interface BulkNegotiatorModalProps {
+    interface BulkNegotiatorModalProps {
     isOpen: boolean
     onClose: () => void
-    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', targetPrice?: number }) => void
+    products: any[]
+    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number }) => void
 }
 
-export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNegotiatorModalProps) {
-    const [percentage, setPercentage] = useState<number>(0)
+export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply }: BulkNegotiatorModalProps) {
     const [savingsType, setSavingsType] = useState<'Ahorro' | 'Avoidance'>('Ahorro')
-    const [targetPrice, setTargetPrice] = useState<string>('')
+    const [basePercent, setBasePercent] = useState<string>('')
+    const [negotiatedPercent, setNegotiatedPercent] = useState<string>('')
+    const [consumption, setConsumption] = useState<string>('')
+    const [skuConsumptions, setSkuConsumptions] = useState<Record<string, string>>({})
+    const [months, setMonths] = useState<string>('')
+
+    const calculatedPercentage = parseFloat(((parseFloat(basePercent) || 0) - (parseFloat(negotiatedPercent) || 0)).toFixed(2))
+
+    const handleMasterConsumptionChange = (val: string) => {
+        setConsumption(val)
+        const newConsumptions: Record<string, string> = {}
+        products?.forEach(p => {
+            newConsumptions[p.id] = val
+        })
+        setSkuConsumptions(newConsumptions)
+    }
+
+    const handleSkuConsumptionChange = (id: string, val: string) => {
+        setSkuConsumptions(prev => ({ ...prev, [id]: val }))
+        setConsumption('')
+    }
 
     if (!isOpen) return null
 
@@ -41,42 +61,82 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                         </div>
                         <h2 className="text-xl font-bold">Negociador Masivo</h2>
                     </div>
-                    <p className="text-blue-100 text-sm">Aplica % simultaneamente a todos los productos de este proveedor.</p>
+                    <p className="text-blue-100 text-sm">Aplica reglas simultaneamente a todos los productos.</p>
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Percentage Info */}
-                    <div>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                                <Percent className="w-4 h-4 text-[#254153]" />
-                                de Ahorro Global
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <label className="text-xs font-semibold text-slate-500">Precio Actual:</label>
-                                <div className="relative w-28">
-                                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                    {/* Pricing Inputs */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">% Base</label>
+                                <div className="relative">
+                                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
                                         type="number"
-                                        value={targetPrice}
-                                        onChange={(e) => setTargetPrice(e.target.value)}
-                                        className="w-full pl-6 pr-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-sm text-[#254153]"
-                                        placeholder="Opcional"
+                                        value={basePercent}
+                                        onChange={(e) => setBasePercent(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-slate-800"
+                                        placeholder="0.0"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">% Negociado</label>
+                                <div className="relative">
+                                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="number"
+                                        value={negotiatedPercent}
+                                        onChange={(e) => setNegotiatedPercent(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-[#254153]"
+                                        placeholder="0.0"
                                     />
                                 </div>
                             </div>
                         </div>
-                        <div className="relative">
-                            <input
-                                type="number"
-                                value={percentage}
-                                onChange={(e) => setPercentage(parseFloat(e.target.value) || 0)}
-                                className="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-lg text-[#254153]"
-                                placeholder="0.0"
-                            />
-                            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">%</span>
+
+                         <div>
+                            <label className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-2">
+                                <Percent className="w-4 h-4 text-emerald-600" />
+                                Porcentaje de Ahorro
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    value={calculatedPercentage}
+                                    readOnly
+                                    className="w-full pl-4 pr-12 py-3 bg-emerald-50 border border-emerald-200 rounded-xl outline-none transition-all font-bold text-lg text-emerald-700"
+                                    placeholder="0.0"
+                                />
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-emerald-500">%</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-wider">Resultado calculado automáticamente y aplicado al precio actual.</p>
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-wider">Se calcula sobre el precio actual de cada producto</p>
+
+                        {/* Consumption Inputs */}
+                        <div className="flex gap-4 pt-2">
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Consumo Mensual Maestro</label>
+                                <input
+                                    type="number"
+                                    value={consumption}
+                                    onChange={(e) => handleMasterConsumptionChange(e.target.value)}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
+                                    placeholder="Agrega a todos..."
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-sm font-semibold text-slate-700 block mb-1">Tiempo (Meses)</label>
+                                <input
+                                    type="number"
+                                    value={months}
+                                    onChange={(e) => setMonths(e.target.value)}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
+                                    placeholder="Opcional"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Savings Type */}
@@ -114,6 +174,37 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                         </p>
                     </div>
 
+                    {/* SKU List */}
+                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                        <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
+                            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Detalle del Consumo Mensual por SKU ({products?.length || 0})</h3>
+                        </div>
+                        <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 p-2">
+                            {products?.map(product => (
+                                <div key={product.id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-colors gap-4">
+                                    <div className="flex flex-col min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                                                {product.codigo_articulo || 'N/A'}
+                                            </span>
+                                            <span className="text-xs font-bold text-slate-700 truncate">{product.descripcion}</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-24 shrink-0 flex flex-col gap-1">
+                                        <input
+                                            type="number"
+                                            value={skuConsumptions[product.id] ?? ''}
+                                            onChange={(e) => handleSkuConsumptionChange(product.id, e.target.value)}
+                                            className="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all text-xs font-medium text-slate-800 text-center"
+                                            placeholder={String(product.cantidad_mensual)}
+                                        />
+                                        <span className="text-[8px] text-slate-400 text-center">Original: {product.cantidad_mensual}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                         <button
@@ -123,7 +214,22 @@ export default function BulkNegotiatorModal({ isOpen, onClose, onApply }: BulkNe
                             Cancelar
                         </button>
                         <button
-                            onClick={() => onApply({ percentage, type: savingsType, targetPrice: targetPrice ? parseFloat(targetPrice) : undefined })}
+                            onClick={() => {
+                                const parsedConsumptions: Record<string, number> = {}
+                                products?.forEach(p => {
+                                    const val = skuConsumptions[p.id]
+                                    if (val && !isNaN(parseFloat(val))) {
+                                        parsedConsumptions[p.id] = parseFloat(val)
+                                    }
+                                })
+
+                                onApply({ 
+                                    percentage: calculatedPercentage, 
+                                    type: savingsType,
+                                    skuConsumptions: parsedConsumptions,
+                                    months: months ? parseFloat(months) : undefined 
+                                })
+                            }}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"
                         >
                             Aplicar a Todo
