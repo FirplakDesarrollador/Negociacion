@@ -185,21 +185,31 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', targetPrice?: number }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number }) => {
         const newList = products.map(product => {
-            const basePriceForCalc = settings.targetPrice !== undefined && settings.targetPrice > 0 ? settings.targetPrice : product.precio_actual
+            const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
-            const precio_negociado = basePriceForCalc - ahorroUnitario
-            const ahorroTotal = ahorroUnitario * product.cantidad_mensual * (product.months || 12)
+
+            // Let precio_negociado capture the difference for History tracking even in Avoidance
+            const resultPrecioNegociado = basePriceForCalc - ahorroUnitario
+
+            const skuVal = settings.skuConsumptions[product.id]
+            const cantMensual = skuVal !== undefined && skuVal >= 0 ? skuVal : product.cantidad_mensual
+            
+            const numMonths = settings.months !== undefined && settings.months > 0 ? settings.months : (product.months || 12)
+
+            const ahorroTotal = ahorroUnitario * cantMensual * numMonths
 
             return {
                 ...product,
-                precio_actual: basePriceForCalc, // Update the base price to the custom global one if provided
-                precio_negociado: precio_negociado > 0 ? precio_negociado : 0,
+                precio_actual: basePriceForCalc,
+                precio_negociado: resultPrecioNegociado > 0 ? resultPrecioNegociado : 0,
                 tipo: settings.type,
                 ahorro_unitario: ahorroUnitario,
                 ahorro_porcentaje: settings.percentage,
                 ahorro_total: ahorroTotal,
+                cantidad_mensual: cantMensual,
+                months: numMonths,
                 isDirty: true
             }
         })
@@ -306,6 +316,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             <BulkNegotiatorModal
                 isOpen={isBulkModalOpen}
                 onClose={() => setIsBulkModalOpen(false)}
+                products={products}
                 onApply={handleApplyBulk}
             />
 
@@ -379,6 +390,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                             <thead>
                                 <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
                                     <th className="px-6 py-4 w-1/3 min-w-[300px]">Descripción</th>
+                                    <th className="px-6 py-4">Código</th>
                                     <th className="px-6 py-4">Tipo</th>
                                     <th className="px-6 py-4 text-right">Precio Actual</th>
                                     <th className="px-6 py-4 text-right bg-blue-50/50">Precio Negociado</th>
@@ -397,6 +409,11 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                         <td className="px-6 py-4 align-middle">
                                             <span className="font-medium text-slate-800 block mb-1 group-hover:text-[#254153] transition-colors">{product.descripcion}</span>
                                             <span className="text-xs text-slate-400">Cant. Mensual: {product.cantidad_mensual}</span>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle">
+                                            <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-md border border-slate-200">
+                                                {product.codigo_articulo || 'N/A'}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 align-middle">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.tipo === 'Ahorro' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
