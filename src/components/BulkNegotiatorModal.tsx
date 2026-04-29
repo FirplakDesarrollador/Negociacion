@@ -187,7 +187,7 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                                             <span className="text-[10px] font-mono font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
                                                 {product.codigo_articulo || 'N/A'}
                                             </span>
-                                            <span className="text-xs font-bold text-slate-700 truncate">{product.descripcion}</span>
+                                            <span className="text-xs font-bold text-slate-700 truncate" title={product.descripcion}>{product.descripcion}</span>
                                         </div>
                                     </div>
                                     <div className="w-24 shrink-0 flex flex-col gap-1">

@@ -365,7 +365,7 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
                                         <th className="px-6 py-4">Fecha</th>
                                         <th className="px-6 py-4">Producto</th>
                                         <th className="px-6 py-4 text-right">Anterior</th>
-                                        <th className="px-6 py-4 text-right">Nuevo</th>
+                                        <th className="px-6 py-4 text-right">Precio evitado</th>
                                         <th className="px-6 py-4 text-right">Ahorro</th>
                                     </tr>
                                 </thead>
