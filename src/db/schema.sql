@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS public."Neg_historial_precios" (
     precio_anterior NUMERIC NOT NULL,
     precio_nuevo NUMERIC NOT NULL,
     ahorro_generado NUMERIC,
-    usuario_id UUID -- Opcional, si quieres registrar quién hizo el cambio
+    usuario_id UUID, -- Opcional, si quieres registrar quién hizo el cambio
+    negociacion_id TEXT -- Identificador agrupador de sesiones de negociación
 );
 
 -- 3. Datos de Prueba (Seed Data)

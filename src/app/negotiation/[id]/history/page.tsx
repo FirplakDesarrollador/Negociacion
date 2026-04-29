@@ -21,6 +21,7 @@ interface HistoryItem {
     precio_nuevo: number
     ahorro_generado: number
     tipo?: string
+    negociacion_id?: string
     Neg_productos: {
         descripcion: string
         tipo: string
@@ -44,6 +45,7 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
     const [selectedSupplier, setSelectedSupplier] = useState(id)
     const [selectedProduct, setSelectedProduct] = useState('Todos')
     const [selectedDate, setSelectedDate] = useState('Todas')
+    const [selectedNegId, setSelectedNegId] = useState('Todos')
 
     useEffect(() => {
         loadInitialData()
@@ -204,6 +206,8 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
         return d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
     })))
 
+    const uniqueNegIds = Array.from(new Set(history.map(item => item.negociacion_id).filter(Boolean))) as string[]
+
     // Filtered Data: history is already filtered by supplier in loadHistory
     const filteredHistory = history.filter(item => {
         const matchesProduct = selectedProduct === 'Todos' || item.Neg_productos?.descripcion === selectedProduct
@@ -211,8 +215,21 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
         const itemDate = new Date(item.fecha_cambio).toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })
         const matchesDate = selectedDate === 'Todas' || itemDate === selectedDate
 
-        return matchesProduct && matchesDate
+        const matchesNegId = selectedNegId === 'Todos' || item.negociacion_id === selectedNegId
+
+        return matchesProduct && matchesDate && matchesNegId
     })
+
+    // Calculate Summary if a specific NegId is selected
+    const summaryNeg = selectedNegId !== 'Todos' ? filteredHistory.reduce(
+        (acc, curr) => {
+            const tipo = curr.tipo || curr.Neg_productos?.tipo || 'Ahorro'
+            if (tipo === 'Ahorro') acc.ahorro += Number(curr.ahorro_generado || 0)
+            if (tipo === 'Avoidance') acc.avoidance += Number(curr.ahorro_generado || 0)
+            return acc
+        },
+        { ahorro: 0, avoidance: 0 }
+    ) : null
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value)
@@ -310,8 +327,40 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                 ))}
                             </select>
                         </div>
+                        <div className="relative">
+                            <select
+                                value={selectedNegId}
+                                onChange={(e) => setSelectedNegId(e.target.value)}
+                                className="appearance-none bg-white border border-slate-300 rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#254153] focus:border-transparent shadow-sm"
+                            >
+                                <option value="Todos">Todos los ID Neg</option>
+                                {uniqueNegIds.map(id => (
+                                    <option key={id} value={id}>{id}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
+
+                {summaryNeg && (
+                    <div className="mb-6 bg-[#254153]/5 border border-[#254153]/10 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in zoom-in duration-300">
+                        <div>
+                            <h3 className="text-lg font-bold text-[#254153]">Resumen de Negociación</h3>
+                            <p className="text-sm text-slate-500 font-mono mt-1">ID: {selectedNegId}</p>
+                        </div>
+                        <div className="flex gap-6 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Ahorro Total</p>
+                                <p className="text-xl font-bold text-emerald-600">{formatCurrency(summaryNeg.ahorro)}</p>
+                            </div>
+                            <div className="w-px bg-slate-200"></div>
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Avoidance Total</p>
+                                <p className="text-xl font-bold text-amber-600">{formatCurrency(summaryNeg.avoidance)}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-slate-200">
@@ -331,6 +380,7 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                                        <th className="px-6 py-4">ID Neg</th>
                                         <th className="px-6 py-4">Fecha / Hora</th>
                                         <th className="px-6 py-4">Proveedor</th>
                                         <th className="px-6 py-4">Producto</th>
@@ -347,6 +397,19 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
 
                                         return (
                                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {item.negociacion_id ? (
+                                                        <button 
+                                                            onClick={() => setSelectedNegId(item.negociacion_id!)}
+                                                            className="text-[10px] font-mono font-bold text-[#254153] bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded border border-blue-200 transition-colors flex items-center justify-center max-w-[100px] truncate"
+                                                            title={item.negociacion_id}
+                                                        >
+                                                            {item.negociacion_id.split('-').slice(0, 2).join('-')}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-[10px] text-slate-400 font-mono">N/A</span>
+                                                    )}
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center gap-2 text-slate-600">
                                                         <Calendar className="w-4 h-4 text-slate-400" />

@@ -234,6 +234,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         try {
             setLoading(true)
 
+            // Generate a unique ID for this negotiation session
+            const currentNegotiationId = `NEG-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
             // Resolve stable supplier identity for storage (Consistent with loadData)
             const stableSupplierId = supplier?.nit || supplier?.codigo || id
 
@@ -273,6 +276,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         precio_nuevo: product.precio_negociado,
                         ahorro_generado: product.ahorro_total,
                         tipo: product.tipo,
+                        negociacion_id: currentNegotiationId,
                     })
 
                 if (historyError) console.error('Error saving history for', product.id, historyError)
