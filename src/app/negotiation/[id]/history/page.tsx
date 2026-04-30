@@ -12,6 +12,7 @@ import {
     Building2,
     Home
 } from 'lucide-react'
+import SearchableSelect from '@/components/SearchableSelect'
 
 // Define interfaces for history data
 interface HistoryItem {
@@ -286,58 +287,43 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
 
                     {/* Filters Area */}
                     <div className="flex flex-wrap gap-3">
-                        <div className="relative">
-                            <select
+                        <div className="relative min-w-[200px] z-40">
+                            <SearchableSelect
                                 value={selectedSupplier}
-                                onChange={(e) => setSelectedSupplier(e.target.value)}
-                                className="appearance-none bg-white border border-slate-300 rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#254153] focus:border-transparent shadow-sm min-w-[200px]"
-                            >
-                                <option value="Todos">Todos los Proveedores</option>
-                                {suppliers.map(s => {
+                                onChange={setSelectedSupplier}
+                                options={[{value: 'Todos', label: 'Todos los Proveedores'}, ...suppliers.map(s => {
                                     const supplierNameValue = s.proveedor || s.nombre || s.razon_social || s.nit || s.id
-                                    return (
-                                        <option key={s.id || s.nit || s._ui_id} value={supplierNameValue}>
-                                            {s.proveedor || s.nombre}
-                                        </option>
-                                    )
-                                })}
-                            </select>
+                                    return {
+                                        value: supplierNameValue,
+                                        label: s.proveedor || s.nombre || supplierNameValue
+                                    }
+                                })]}
+                                searchPlaceholder="Buscar proveedor..."
+                            />
                         </div>
-                        <div className="relative">
-                            <select
+                        <div className="relative min-w-[200px] z-30">
+                            <SearchableSelect
                                 value={selectedProduct}
-                                onChange={(e) => setSelectedProduct(e.target.value)}
-                                className="appearance-none bg-white border border-slate-300 rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#254153] focus:border-transparent shadow-sm"
-                            >
-                                <option value="Todos">Todos los Productos</option>
-                                {uniqueProducts.map(p => (
-                                    <option key={p} value={p}>{p}</option>
-                                ))}
-                            </select>
+                                onChange={setSelectedProduct}
+                                options={[{value: 'Todos', label: 'Todos los Productos'}, ...uniqueProducts.map(p => ({value: p, label: p}))]}
+                                searchPlaceholder="Buscar producto..."
+                            />
                         </div>
-                        <div className="relative">
-                            <select
+                        <div className="relative min-w-[200px] z-20">
+                            <SearchableSelect
                                 value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                className="appearance-none bg-white border border-slate-300 rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#254153] focus:border-transparent shadow-sm"
-                            >
-                                <option value="Todas">Todas las Fechas</option>
-                                {uniqueDates.map(d => (
-                                    <option key={d} value={d} className="capitalize">{d}</option>
-                                ))}
-                            </select>
+                                onChange={setSelectedDate}
+                                options={[{value: 'Todas', label: 'Todas las Fechas'}, ...uniqueDates.map(d => ({value: d, label: d}))]}
+                                searchPlaceholder="Buscar fecha..."
+                            />
                         </div>
-                        <div className="relative">
-                            <select
+                        <div className="relative min-w-[200px] z-10">
+                            <SearchableSelect
                                 value={selectedNegId}
-                                onChange={(e) => setSelectedNegId(e.target.value)}
-                                className="appearance-none bg-white border border-slate-300 rounded-lg py-2 pl-4 pr-10 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#254153] focus:border-transparent shadow-sm"
-                            >
-                                <option value="Todos">Todos los ID Neg</option>
-                                {uniqueNegIds.map(id => (
-                                    <option key={id} value={id}>{id}</option>
-                                ))}
-                            </select>
+                                onChange={setSelectedNegId}
+                                options={[{value: 'Todos', label: 'Todos los ID Neg'}, ...uniqueNegIds.map(id => ({value: id, label: id}))]}
+                                searchPlaceholder="Buscar ID..."
+                            />
                         </div>
                     </div>
                 </div>

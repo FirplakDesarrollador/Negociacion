@@ -17,6 +17,7 @@ import {
     Download,
     Home
 } from 'lucide-react'
+import SearchableSelect from '@/components/SearchableSelect'
 import {
     BarChart,
     Bar,
@@ -313,31 +314,27 @@ export default function BIVisualsPage() {
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10"
                         />
                     </div>
-                    <div className="flex-[1.5] w-full">
+                    <div className="flex-[1.5] w-full relative z-20">
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                             <Users className="w-3 h-3" /> Proveedor
                         </label>
-                        <select
+                        <SearchableSelect
                             value={selectedSupplier}
-                            onChange={(e) => setSelectedSupplier(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10 appearance-none"
-                        >
-                            <option value="All">Todos los proveedores</option>
-                            {filterOptions.suppliers.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                            onChange={setSelectedSupplier}
+                            options={['All', ...filterOptions.suppliers].map(s => ({ value: s, label: s === 'All' ? 'Todos los proveedores' : s }))}
+                            searchPlaceholder="Buscar proveedor..."
+                        />
                     </div>
-                    <div className="flex-[2] w-full">
+                    <div className="flex-[2] w-full relative z-10">
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
                             <Activity className="w-3 h-3" /> Producto
                         </label>
-                        <select
+                        <SearchableSelect
                             value={selectedProduct}
-                            onChange={(e) => setSelectedProduct(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10 appearance-none"
-                        >
-                            <option value="All">Todos los productos</option>
-                            {filterOptions.products.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                            onChange={setSelectedProduct}
+                            options={['All', ...filterOptions.products].map(p => ({ value: p, label: p === 'All' ? 'Todos los productos' : p }))}
+                            searchPlaceholder="Buscar producto..."
+                        />
                     </div>
                     <div className="shrink-0 w-full md:w-auto">
                         <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-xl flex items-center gap-3">
@@ -524,6 +521,7 @@ export default function BIVisualsPage() {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider">
                                 <tr>
+                                    <th className="px-6 py-4">ID Neg</th>
                                     <th className="px-6 py-4">Fecha</th>
                                     <th className="px-6 py-4">Proveedor</th>
                                     <th className="px-6 py-4">Producto</th>
@@ -534,7 +532,16 @@ export default function BIVisualsPage() {
                             <tbody className="divide-y divide-slate-100">
                                 {filteredData.slice(-10).reverse().map((item, i) => (
                                     <tr key={i} className="hover:bg-slate-50 transition-colors">
-                                        <td className="px-6 py-4 text-sm text-slate-600">
+                                        <td className="px-6 py-4">
+                                            {item.negociacion_id ? (
+                                                <span className="text-[10px] font-mono font-bold text-[#254153] bg-blue-50 px-2 py-1 rounded border border-blue-200 block truncate max-w-[100px]" title={item.negociacion_id}>
+                                                    {item.negociacion_id.split('-').slice(0, 2).join('-')}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] text-slate-400 font-mono">N/A</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                             {new Date(item.fecha_cambio).toLocaleDateString('es-CO')}
                                         </td>
                                         <td className="px-6 py-4 text-sm font-bold text-[#254153]">

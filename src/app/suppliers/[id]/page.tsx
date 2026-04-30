@@ -26,6 +26,7 @@ import {
     AreaChart,
     Area
 } from 'recharts'
+import SearchableSelect from '@/components/SearchableSelect'
 
 interface HistoryItem {
     id: number
@@ -33,6 +34,7 @@ interface HistoryItem {
     precio_anterior: number
     precio_nuevo: number
     ahorro_generado: number
+    negociacion_id?: string
     Neg_productos: {
         descripcion: string
         tipo: string
@@ -56,6 +58,7 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
     // Chart State
     const [chartData, setChartData] = useState<any[]>([])
     const [selectedChartProduct, setSelectedChartProduct] = useState<string>('Todos')
+    const [selectedChartNegId, setSelectedChartNegId] = useState<string>('Todos')
 
     useEffect(() => {
         loadDashboardData()
@@ -158,9 +161,11 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
         // If 'Todos' is selected, we might want to show an aggregate or something else.
         // But price evolution is usually better per product.
         // Let's filter by product if one is selected.
-        const filtered = selectedChartProduct === 'Todos'
-            ? sortedHistory
-            : sortedHistory.filter(h => h.Neg_productos?.descripcion === selectedChartProduct)
+        const filtered = sortedHistory.filter(h => {
+            const matchesProduct = selectedChartProduct === 'Todos' || h.Neg_productos?.descripcion === selectedChartProduct
+            const matchesNegId = selectedChartNegId === 'Todos' || h.negociacion_id === selectedChartNegId
+            return matchesProduct && matchesNegId
+        })
 
         const chartPoints = filtered.map(h => ({
             fecha: new Date(h.fecha_cambio).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }),
@@ -178,7 +183,7 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
         if (history.length > 0) {
             prepareChartData(history)
         }
-    }, [selectedChartProduct, history])
+    }, [selectedChartProduct, selectedChartNegId, history])
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(value)
@@ -279,16 +284,24 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
                             </div>
                         </div>
 
-                        <select
-                            value={selectedChartProduct}
-                            onChange={(e) => setSelectedChartProduct(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 outline-none transition-all min-w-[200px]"
-                        >
-                            <option value="Todos">Todos los Productos</option>
-                            {Array.from(new Set(history.map(h => h.Neg_productos?.descripcion).filter(Boolean))).map(p => (
-                                <option key={p as string} value={p as string}>{p as string}</option>
-                            ))}
-                        </select>
+                        <div className="flex flex-col sm:flex-row items-center gap-3">
+                            <div className="w-full sm:w-[200px] relative z-20">
+                                <SearchableSelect
+                                    value={selectedChartProduct}
+                                    onChange={setSelectedChartProduct}
+                                    options={['Todos', ...Array.from(new Set(history.map(h => h.Neg_productos?.descripcion).filter(Boolean))) as string[]].map(p => ({ value: p, label: p === 'Todos' ? 'Todos los Productos' : p }))}
+                                    searchPlaceholder="Buscar producto..."
+                                />
+                            </div>
+                            <div className="w-full sm:w-[200px] relative z-10">
+                                <SearchableSelect
+                                    value={selectedChartNegId}
+                                    onChange={setSelectedChartNegId}
+                                    options={['Todos', ...Array.from(new Set(history.map(h => h.negociacion_id).filter(Boolean))) as string[]].map(id => ({ value: id, label: id === 'Todos' ? 'Todos los ID Neg' : id }))}
+                                    searchPlaceholder="Buscar ID..."
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="h-[350px] w-full">
@@ -362,6 +375,7 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider font-semibold border-b border-slate-200">
+                                        <th className="px-6 py-4">ID Neg</th>
                                         <th className="px-6 py-4">Fecha</th>
                                         <th className="px-6 py-4">Producto</th>
                                         <th className="px-6 py-4 text-right">Anterior</th>
@@ -372,6 +386,15 @@ export default function SupplierDashboardPage({ params }: { params: Promise<{ id
                                 <tbody className="divide-y divide-slate-100">
                                     {history.map((item) => (
                                         <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {item.negociacion_id ? (
+                                                    <span className="text-[10px] font-mono font-bold text-[#254153] bg-blue-50 px-2 py-1 rounded border border-blue-200 block truncate max-w-[100px]" title={item.negociacion_id}>
+                                                        {item.negociacion_id.split('-').slice(0, 2).join('-')}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[10px] text-slate-400 font-mono">N/A</span>
+                                                )}
+                                            </td>
                                             <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <Calendar className="w-3 h-3 text-slate-400" />
