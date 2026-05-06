@@ -132,7 +132,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                     ahorro_total: 0,
                     months: 12,
                     unidad: p.Unidad_de_medida,
-                    codigo_articulo: p.Codigo_Articulo
+                    codigo_articulo: p.Codigo_Articulo,
+                    porcentaje_base: override?.porcentaje_base || 0,
+                    porcentaje_negociado: override?.porcentaje_negociado || 0
                 }
             })
 
@@ -185,7 +187,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number, basePercent?: number, negotiatedPercent?: number }) => {
         const newList = products.map(product => {
             const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
@@ -210,6 +212,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 ahorro_total: ahorroTotal,
                 cantidad_mensual: cantMensual,
                 months: numMonths,
+                porcentaje_base: settings.basePercent || 0,
+                porcentaje_negociado: settings.negotiatedPercent || 0,
                 isDirty: true
             }
         })
@@ -234,8 +238,35 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         try {
             setLoading(true)
 
-            // Generate a unique ID for this negotiation session
-            const currentNegotiationId = `NEG-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+            // Fetch existing IDs to find the max consecutive number
+            const { data: existingIds } = await supabase
+                .from('Neg_historial_precios')
+                .select('negociacion_id')
+                .not('negociacion_id', 'is', null)
+
+            let nextId = 1
+            if (existingIds && existingIds.length > 0) {
+                let maxId = 0
+                existingIds.forEach(row => {
+                    const val = row.negociacion_id
+                    if (val) {
+                        // Extract number if it has a prefix, or just parse if it's already a number
+                        const cleanVal = val.replace(/[^0-9]/g, '')
+                        if (cleanVal) {
+                            const num = parseInt(cleanVal, 10)
+                            // We only consider it if it was a simple number or NEG-X format, 
+                            // to avoid large timestamps from old UUIDs messing up the sequence
+                            if (num > maxId && num < 1000000) { 
+                                maxId = num
+                            }
+                        }
+                    }
+                })
+                nextId = maxId + 1
+            }
+
+            // Generate a consecutive ID
+            const currentNegotiationId = nextId.toString()
 
             // Resolve stable supplier identity for storage (Consistent with loadData)
             const stableSupplierId = supplier?.nit || supplier?.codigo || id
@@ -256,7 +287,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         descripcion: product.descripcion,
                         precio_actual: priceToStore,
                         cantidad_mensual: product.cantidad_mensual,
-                        tipo: product.tipo
+                        tipo: product.tipo,
+                        porcentaje_base: product.porcentaje_base,
+                        porcentaje_negociado: product.porcentaje_negociado
                     }, {
                         onConflict: 'base_id, supplier_id'
                     })
@@ -277,6 +310,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         ahorro_generado: product.ahorro_total,
                         tipo: product.tipo,
                         negociacion_id: currentNegotiationId,
+                        porcentaje_base: product.porcentaje_base,
+                        porcentaje_negociado: product.porcentaje_negociado
                     })
 
                 if (historyError) console.error('Error saving history for', product.id, historyError)
@@ -396,7 +431,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                     <th className="px-6 py-4 w-1/3 min-w-[300px]">Descripción</th>
                                     <th className="px-6 py-4">Código</th>
                                     <th className="px-6 py-4">Tipo</th>
-                                    <th className="px-6 py-4 text-right">Precio Actual</th>
+                                    <th className="px-6 py-4 text-right">Precio Base</th>
                                     <th className="px-6 py-4 text-right bg-blue-50/50">Precio Negociado</th>
                                     <th className="px-6 py-4 text-right">Ahorro %</th>
                                     <th className="px-6 py-4 text-right font-bold text-[#254153]">Total Estimado</th>
@@ -426,10 +461,10 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right text-slate-500 align-middle">
-                                            {formatCurrency(product.precio_actual)}
+                                            {formatCurrency(product.tipo === 'Avoidance' ? product.precio_actual * (1 + (product.porcentaje_base || 0) / 100) : product.precio_actual)}
                                         </td>
                                         <td className="px-6 py-4 text-right bg-blue-50/30 align-middle font-bold text-[#254153]">
-                                            {formatCurrency(product.precio_negociado || product.precio_actual)}
+                                            {formatCurrency(product.tipo === 'Avoidance' ? product.precio_actual * (1 + (product.porcentaje_negociado || 0) / 100) : (product.precio_negociado || product.precio_actual))}
                                         </td>
                                         <td className="px-6 py-4 text-right align-middle">
                                             <span className={`font-medium ${product.ahorro_porcentaje > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>

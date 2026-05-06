@@ -15,7 +15,7 @@ import {
     isOpen: boolean
     onClose: () => void
     products: any[]
-    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number }) => void
+    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number, basePercent?: number, negotiatedPercent?: number }) => void
 }
 
 export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply }: BulkNegotiatorModalProps) {
@@ -46,9 +46,9 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
 
     return (
         <div className="fixed inset-0 bg-[#254153]/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
                 {/* Header */}
-                <div className="bg-[#254153] p-6 text-white relative">
+                <div className="bg-[#254153] p-6 text-white relative shrink-0">
                     <button
                         onClick={onClose}
                         className="absolute right-4 top-4 p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -64,7 +64,7 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                     <p className="text-blue-100 text-sm">Aplica reglas simultaneamente a todos los productos.</p>
                 </div>
 
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 overflow-y-auto flex-1">
                     {/* Pricing Inputs */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
@@ -112,30 +112,6 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                                 <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-emerald-500">%</span>
                             </div>
                             <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-wider">Resultado calculado automáticamente y aplicado al precio actual.</p>
-                        </div>
-
-                        {/* Consumption Inputs */}
-                        <div className="flex gap-4 pt-2">
-                            <div className="flex-1">
-                                <label className="text-sm font-semibold text-slate-700 block mb-1">Consumo Mensual Maestro</label>
-                                <input
-                                    type="number"
-                                    value={consumption}
-                                    onChange={(e) => handleMasterConsumptionChange(e.target.value)}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
-                                    placeholder="Agrega a todos..."
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-sm font-semibold text-slate-700 block mb-1">Tiempo (Meses)</label>
-                                <input
-                                    type="number"
-                                    value={months}
-                                    onChange={(e) => setMonths(e.target.value)}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
-                                    placeholder="Opcional"
-                                />
-                            </div>
                         </div>
                     </div>
 
@@ -205,6 +181,30 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                         </div>
                     </div>
 
+                    {/* Consumption Inputs (Moved below SKU List) */}
+                    <div className="flex gap-4 pt-2 border-t border-slate-100 mt-4">
+                        <div className="flex-1">
+                            <label className="text-sm font-semibold text-slate-700 block mb-1">Consumo Mensual Maestro</label>
+                            <input
+                                type="number"
+                                value={consumption}
+                                onChange={(e) => handleMasterConsumptionChange(e.target.value)}
+                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
+                                placeholder="Agrega a todos..."
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-sm font-semibold text-slate-700 block mb-1">Tiempo (Meses)</label>
+                            <input
+                                type="number"
+                                value={months}
+                                onChange={(e) => setMonths(e.target.value)}
+                                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800"
+                                placeholder="Opcional"
+                            />
+                        </div>
+                    </div>
+
                     {/* Actions */}
                     <div className="flex gap-3 pt-2">
                         <button
@@ -227,7 +227,9 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                                     percentage: calculatedPercentage, 
                                     type: savingsType,
                                     skuConsumptions: parsedConsumptions,
-                                    months: months ? parseFloat(months) : undefined 
+                                    months: months ? parseFloat(months) : undefined,
+                                    basePercent: parseFloat(basePercent) || 0,
+                                    negotiatedPercent: parseFloat(negotiatedPercent) || 0
                                 })
                             }}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"

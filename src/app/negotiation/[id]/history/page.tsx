@@ -23,6 +23,8 @@ interface HistoryItem {
     ahorro_generado: number
     tipo?: string
     negociacion_id?: string
+    porcentaje_base?: number
+    porcentaje_negociado?: number
     Neg_productos: {
         descripcion: string
         tipo: string
@@ -378,8 +380,18 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredHistory.map((item) => {
-                                        const isReduction = item.precio_nuevo < item.precio_anterior
-                                        const diff = item.precio_anterior - item.precio_nuevo
+                                        const tipo = item.tipo || item.Neg_productos?.tipo || 'Ahorro'
+                                        
+                                        const displayPrecioAnterior = tipo === 'Avoidance' 
+                                            ? item.precio_anterior * (1 + (item.porcentaje_base || 0) / 100) 
+                                            : item.precio_anterior
+
+                                        const displayPrecioNuevo = tipo === 'Avoidance' 
+                                            ? item.precio_anterior * (1 + (item.porcentaje_negociado || 0) / 100) 
+                                            : item.precio_nuevo
+
+                                        const isReduction = displayPrecioNuevo < displayPrecioAnterior
+                                        const diff = displayPrecioAnterior - displayPrecioNuevo
 
                                         return (
                                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
@@ -412,16 +424,16 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <span className="block font-medium text-slate-800">{item.Neg_productos?.descripcion || 'Producto Eliminado'}</span>
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1 ${(item.tipo || item.Neg_productos?.tipo || 'Ahorro') === 'Ahorro' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider mt-1 ${tipo === 'Ahorro' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                                                         }`}>
-                                                        {item.tipo || item.Neg_productos?.tipo || 'Ahorro'}
+                                                        {tipo}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-right text-slate-500 font-mono">
-                                                    {formatCurrency(item.precio_anterior)}
+                                                    {formatCurrency(displayPrecioAnterior)}
                                                 </td>
                                                 <td className="px-6 py-4 text-right font-bold text-[#254153] font-mono">
-                                                    {formatCurrency(item.precio_nuevo)}
+                                                    {formatCurrency(displayPrecioNuevo)}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <span className={`inline-flex items-center gap-1 font-medium text-sm ${isReduction ? 'text-emerald-600' : 'text-rose-600'}`}>

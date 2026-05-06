@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS public."Neg_productos" (
     precio_actual NUMERIC NOT NULL DEFAULT 0,
     cantidad_mensual NUMERIC DEFAULT 1,
     tipo TEXT DEFAULT 'Ahorro', -- 'Ahorro' o 'Avoidance'
+    porcentaje_base NUMERIC DEFAULT 0,
+    porcentaje_negociado NUMERIC DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -19,6 +21,8 @@ CREATE TABLE IF NOT EXISTS public."Neg_historial_precios" (
     precio_anterior NUMERIC NOT NULL,
     precio_nuevo NUMERIC NOT NULL,
     ahorro_generado NUMERIC,
+    porcentaje_base NUMERIC DEFAULT 0,
+    porcentaje_negociado NUMERIC DEFAULT 0,
     usuario_id UUID, -- Opcional, si quieres registrar quién hizo el cambio
     negociacion_id TEXT -- Identificador agrupador de sesiones de negociación
 );

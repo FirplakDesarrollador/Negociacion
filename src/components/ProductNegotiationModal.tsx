@@ -12,6 +12,8 @@ interface Product {
     tipo: 'Ahorro' | 'Avoidance'
     // Additional fields that might come in handy
     months?: number
+    porcentaje_base?: number
+    porcentaje_negociado?: number
 }
 
 interface ProductNegotiationModalProps {
@@ -29,6 +31,8 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
     const [consumption, setConsumption] = useState<number>(0)
     const [months, setMonths] = useState<number>(12) // Default to 1 year?
     const [savingsType, setSavingsType] = useState<'Ahorro' | 'Avoidance'>('Ahorro')
+    const [basePercent, setBasePercent] = useState<number>(0)
+    const [negPercent, setNegPercent] = useState<number>(0)
 
     useEffect(() => {
         if (product) {
@@ -44,6 +48,9 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                 const initialPercent = (initialSavings / product.precio_actual) * 100
                 setPercentage(initialPercent > 0 ? initialPercent : 0)
             }
+            
+            setBasePercent(product.porcentaje_base || 0)
+            setNegPercent(product.porcentaje_negociado || 0)
         }
     }, [product])
 
@@ -68,7 +75,8 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
     if (!isOpen || !product) return null
 
     // Calculations
-    const unitSavings = currentPrice - negotiatedPrice
+    const calculatedPercentage = savingsType === 'Avoidance' ? Math.max(0, basePercent - negPercent) : percentage;
+    const unitSavings = savingsType === 'Avoidance' ? currentPrice * (calculatedPercentage / 100) : (currentPrice - negotiatedPrice)
     const totalSavings = unitSavings * consumption * months
 
     const formatCurrency = (value: number) => {
@@ -79,10 +87,12 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
         onSave({
             ...product,
             precio_actual: currentPrice,
-            precio_negociado: negotiatedPrice,
+            precio_negociado: savingsType === 'Avoidance' ? currentPrice - unitSavings : negotiatedPrice,
             cantidad_mensual: consumption,
             tipo: savingsType,
-            months: months
+            months: months,
+            porcentaje_base: basePercent,
+            porcentaje_negociado: negPercent
         })
         onClose()
     }
@@ -188,10 +198,39 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                             </>
                                         )}
                                     </div>
-                                    {negotiationType === 'percentage' && (
+                                    {negotiationType === 'percentage' && savingsType !== 'Avoidance' && (
                                         <p className="text-xs text-slate-500 mt-1 text-right">
                                             Equivale a: <span className="font-semibold text-[#254153]">{formatCurrency(currentPrice * (1 - percentage / 100))}</span>
                                         </p>
+                                    )}
+
+                                    {savingsType === 'Avoidance' && (
+                                        <div className="flex gap-4 mt-4">
+                                            <div className="flex-1">
+                                                <label className="block text-xs font-medium text-slate-700 mb-1">% Base</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={basePercent}
+                                                        onChange={(e) => setBasePercent(parseFloat(e.target.value) || 0)}
+                                                        className="w-full pl-3 pr-8 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#254153] outline-none transition-all"
+                                                    />
+                                                    <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="block text-xs font-medium text-slate-700 mb-1">% Negociado</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="number"
+                                                        value={negPercent}
+                                                        onChange={(e) => setNegPercent(parseFloat(e.target.value) || 0)}
+                                                        className="w-full pl-3 pr-8 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#254153] outline-none transition-all"
+                                                    />
+                                                    <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                                                </div>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
 
