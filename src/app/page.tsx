@@ -65,12 +65,12 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* AlejoF Prueba Button */}
+              {/* Live Button */}
               <button 
-                onClick={() => alert("AlejoF Prueba clickeado")}
+                onClick={() => alert("Modo Live Activo")}
                 className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-2 px-6 rounded-lg shadow-sm transition-colors text-sm"
               >
-                AlejoF Prueba
+                Live
               </button>
             </div>
 
