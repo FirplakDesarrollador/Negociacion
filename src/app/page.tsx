@@ -165,9 +165,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Opción 4: MCI coming soon */}
+          {/* Opción 4: MCI */}
           <div
-            className="group bg-white rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.1)] hover:border-amber-500/20 transition-all duration-300 cursor-not-allowed relative overflow-hidden"
+            onClick={() => router.push('/mci')}
+            className="group bg-white rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.1)] hover:border-amber-500/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
               <Zap className="w-32 h-32 text-amber-500" />
@@ -176,10 +177,11 @@ export default function Home() {
               <div className="w-14 h-14 bg-amber-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-amber-500 transition-colors duration-300">
                 <Zap className="w-7 h-7 text-amber-600 group-hover:text-white transition-colors duration-300" />
               </div>
-              <h3 className="text-xl font-bold text-[#254153] mb-3 group-hover:translate-x-1 transition-transform">MCI coming soon</h3>
-              <p className="text-slate-500 mb-8 flex-grow">Módulo de Inteligencia de Mercado para optimizar sus procesos de abastecimiento estratégico.</p>
-              <button disabled className="w-full py-3 px-4 rounded-lg border-2 border-slate-200 text-slate-400 font-semibold text-sm flex items-center justify-center gap-2 cursor-not-allowed">
-                Próximamente
+              <h3 className="text-xl font-bold text-[#254153] mb-3 group-hover:translate-x-1 transition-transform">MCI</h3>
+              <p className="text-slate-500 mb-8 flex-grow">Módulo de Inteligencia de Mercado y seguimiento de Metas Crucialmente Importantes.</p>
+              <button className="w-full py-3 px-4 rounded-lg border-2 border-[#254153] text-[#254153] font-semibold text-sm group-hover:bg-[#254153] group-hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                Ingresar al Módulo
+                <span className="text-lg">→</span>
               </button>
             </div>
           </div>
