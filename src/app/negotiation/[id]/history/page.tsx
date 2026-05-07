@@ -375,7 +375,9 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                         <th className="px-6 py-4 text-right">Precio Anterior</th>
                                         <th className="px-6 py-4 text-right">Nuevo Precio</th>
                                         <th className="px-6 py-4 text-right">Impacto</th>
+                                        <th className="px-6 py-4 text-right">Consumo Mes Prom</th>
                                         <th className="px-6 py-4 text-right">Ahorro Generado</th>
+                                        <th className="px-6 py-4">Comentarios</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -441,10 +443,16 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                                         {formatCurrency(Math.abs(diff))}
                                                     </span>
                                                 </td>
+                                                <td className="px-6 py-4 text-right font-medium text-slate-700">
+                                                    {(item as any).cantidad_mensual || '-'}
+                                                </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <span className="font-bold text-emerald-600">
                                                         {formatCurrency(item.ahorro_generado || 0)}
                                                     </span>
+                                                </td>
+                                                <td className="px-6 py-4 max-w-[200px] truncate text-xs text-slate-500" title={(item as any).comentarios || ''}>
+                                                    {(item as any).comentarios || <span className="text-slate-300 italic">Sin comentarios</span>}
                                                 </td>
                                             </tr>
                                         )

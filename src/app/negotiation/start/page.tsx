@@ -11,7 +11,9 @@ import {
     ArrowLeft,
     Filter,
     Loader2,
-    Home
+    Home,
+    BookOpen,
+    X
 } from 'lucide-react'
 
 export default function SupplierSelectionPage() {
@@ -20,6 +22,7 @@ export default function SupplierSelectionPage() {
     const [suppliers, setSuppliers] = useState<any[]>([])
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null)
+    const [isBlogModalOpen, setIsBlogModalOpen] = useState(false)
 
     useEffect(() => {
         const fetchSuppliers = async () => {
@@ -87,9 +90,65 @@ export default function SupplierSelectionPage() {
                             <Home className="w-5 h-5" />
                             <span className="text-sm font-medium hidden sm:inline">Inicio</span>
                         </button>
+                        <div className="h-8 w-px bg-slate-200 mx-2"></div>
+                        <button
+                            onClick={() => setIsBlogModalOpen(true)}
+                            className="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            El blog del negociador
+                        </button>
                     </div>
                 </div>
             </nav>
+
+            {isBlogModalOpen && (
+                <div className="fixed inset-0 bg-[#254153]/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="bg-[#254153] p-6 text-white relative shrink-0">
+                            <button
+                                onClick={() => setIsBlogModalOpen(false)}
+                                className="absolute right-4 top-4 p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <BookOpen className="w-6 h-6 text-amber-400" />
+                                El blog del negociador
+                            </h2>
+                            <p className="text-blue-100 text-sm mt-1">by Alejandro Fernandez</p>
+                        </div>
+                        <div className="p-6 space-y-4 text-slate-700 leading-relaxed max-h-[70vh] overflow-y-auto">
+                            <h3 className="text-lg font-bold text-[#254153]">¿Cómo negociar?</h3>
+                            <p>
+                                Jose I Tobon ha sido, a lo largo de mi carrera, un gurú que me ha enseñado todo sobre el arte de la negociación.
+                            </p>
+                            <p>
+                                A lo largo de mis 13 años, y en especial mis últimos 8 años, cada peso efectivo evitado y ahorrado con generación de valor para firplak lo han demostrado. No obstante; si de enseñar se trata, mejor escucharlo a él. Quizás algún día nos acompañe en FPK en algún bootcamp o mentoría. why not.
+                            </p>
+                            <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl my-4">
+                                <p className="mb-3 text-sm text-amber-900">
+                                    Por eso les comparto este podcast que sintetiza genialmente lo que personalmente hago cada que me "siento en la mesa" a lograr valor para FPK.
+                                </p>
+                                <a 
+                                    href="https://open.spotify.com/episode/5NZBE35r4MNuDq4rBLctRd?si=nBeo3ZtcS-qxQyblK1JRyg&t=7073&pi=LMRiELu" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full font-bold text-sm transition-colors"
+                                >
+                                    Escuchar en Spotify
+                                </a>
+                            </div>
+                            <p className="font-medium">
+                                Siempre partiendo de la base sólida de la preparación de una negociación y evitando al máximo la inmediatez.
+                            </p>
+                            <p className="text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                Si les interesa profundizar, también hice un resumen genial con IA que entrega las conclusiones del podcast. Me escriben y se los mando.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header Section */}

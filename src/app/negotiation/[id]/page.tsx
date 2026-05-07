@@ -289,7 +289,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         cantidad_mensual: product.cantidad_mensual,
                         tipo: product.tipo,
                         porcentaje_base: product.porcentaje_base,
-                        porcentaje_negociado: product.porcentaje_negociado
+                        porcentaje_negociado: product.porcentaje_negociado,
+                        comentarios: product.comentarios
                     }, {
                         onConflict: 'base_id, supplier_id'
                     })
@@ -311,7 +312,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                         tipo: product.tipo,
                         negociacion_id: currentNegotiationId,
                         porcentaje_base: product.porcentaje_base,
-                        porcentaje_negociado: product.porcentaje_negociado
+                        porcentaje_negociado: product.porcentaje_negociado,
+                        comentarios: product.comentarios,
+                        cantidad_mensual: product.cantidad_mensual
                     })
 
                 if (historyError) console.error('Error saving history for', product.id, historyError)
@@ -434,7 +437,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                     <th className="px-6 py-4 text-right">Precio Base</th>
                                     <th className="px-6 py-4 text-right bg-blue-50/50">Precio Negociado</th>
                                     <th className="px-6 py-4 text-right">Ahorro %</th>
+                                    <th className="px-6 py-4 text-right">Consumo Mes Prom</th>
                                     <th className="px-6 py-4 text-right font-bold text-[#254153]">Total Estimado</th>
+                                    <th className="px-6 py-4 w-48">Comments</th>
                                     <th className="px-6 py-4"></th>
                                 </tr>
                             </thead>
@@ -471,10 +476,27 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                                 {formatPercentage(product.ahorro_porcentaje)}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4 text-right align-middle font-medium text-slate-700">
+                                            {product.cantidad_mensual}
+                                        </td>
                                         <td className="px-6 py-4 text-right align-middle">
                                             <span className={`font-bold ${product.ahorro_total > 0 ? 'text-[#254153]' : 'text-slate-400'}`}>
                                                 {formatCurrency(product.ahorro_total)}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 align-middle" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="text"
+                                                value={product.comentarios || ''}
+                                                onChange={(e) => {
+                                                    const updatedList = products.map(p => 
+                                                        p.id === product.id ? { ...p, comentarios: e.target.value, isDirty: true } : p
+                                                    )
+                                                    setProducts(updatedList)
+                                                }}
+                                                placeholder="Añadir comentario..."
+                                                className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-[#254153] focus:border-[#254153]"
+                                            />
                                         </td>
                                         <td className="px-6 py-4 text-right align-middle">
                                             <button className="text-blue-500 hover:scale-110 transition-transform opacity-0 group-hover:opacity-100">

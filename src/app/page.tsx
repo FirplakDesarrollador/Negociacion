@@ -66,7 +66,7 @@ export default function Home() {
               </div>
 
               {/* Live Button */}
-              <button 
+              <button
                 onClick={() => alert("Modo Live Activo")}
                 className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold py-2 px-6 rounded-lg shadow-sm transition-colors text-sm"
               >
@@ -103,7 +103,7 @@ export default function Home() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
 
 
-          {/* Opción 1: Realizar Negociación */}
+          {/* Opción 1: Registrar Negociación */}
           <div
             onClick={() => router.push('/negotiation/start')}
             className="group bg-white rounded-2xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:shadow-[0_20px_40px_-10px_rgba(37,65,83,0.1)] hover:border-[#254153]/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
@@ -115,8 +115,8 @@ export default function Home() {
               <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-[#254153] transition-colors duration-300">
                 <Briefcase className="w-7 h-7 text-[#254153] group-hover:text-white transition-colors duration-300" />
               </div>
-              <h3 className="text-xl font-bold text-[#254153] mb-3 group-hover:translate-x-1 transition-transform">Realizar Negociación</h3>
-              <p className="text-slate-500 mb-8 flex-grow">Inicie nuevos procesos de negociación automatizada con sus proveedores registrados.</p>
+              <h3 className="text-xl font-bold text-[#254153] mb-3 group-hover:translate-x-1 transition-transform">Registrar Negociación</h3>
+              <p className="text-slate-500 mb-8 flex-grow">Registre nuevos procesos de negociación automatizada con sus proveedores registrados.</p>
               <button className="w-full py-3 px-4 rounded-lg border-2 border-[#254153] text-[#254153] font-semibold text-sm group-hover:bg-[#254153] group-hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
                 Iniciar Proceso
                 <span className="text-lg">→</span>
