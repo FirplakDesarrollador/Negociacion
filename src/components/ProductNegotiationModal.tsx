@@ -54,29 +54,61 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
         }
     }, [product])
 
-    // Effect to update price when percentage changes
-    useEffect(() => {
-        if (negotiationType === 'percentage' && product) {
-            const savingsAmount = currentPrice * (percentage / 100)
-            const newPrice = currentPrice - savingsAmount
+    // Synchronize functions instead of effects to prevent loop and handle Avoidance
+    const updateFromPrice = (newPrice: number, current: number = currentPrice, bPercent: number = basePercent) => {
+        setNegotiatedPrice(newPrice)
+        if (current > 0) {
+            const savingsAmount = current - newPrice
+            const newPercent = (savingsAmount / current) * 100
+            setPercentage(newPercent)
+            
+            if (savingsType === 'Avoidance') {
+                setNegPercent(bPercent - newPercent)
+            }
+        }
+    }
+
+    const updateFromPercentage = (newPercent: number, current: number = currentPrice, bPercent: number = basePercent) => {
+        setPercentage(newPercent)
+        const savingsAmount = current * (newPercent / 100)
+        const newPrice = current - savingsAmount
+        setNegotiatedPrice(newPrice > 0 ? newPrice : 0)
+        
+        if (savingsType === 'Avoidance') {
+             setNegPercent(bPercent - newPercent)
+        }
+    }
+
+    const updateFromAvoidance = (bPercent: number, nPercent: number, current: number = currentPrice) => {
+        setBasePercent(bPercent)
+        setNegPercent(nPercent)
+        
+        const calcPercent = Math.max(0, bPercent - nPercent)
+        setPercentage(calcPercent)
+        
+        const savingsAmount = current * (calcPercent / 100)
+        const newPrice = current - savingsAmount
+        setNegotiatedPrice(newPrice > 0 ? newPrice : 0)
+    }
+
+    const handleCurrentPriceChange = (newCurrentPrice: number) => {
+        setCurrentPrice(newCurrentPrice)
+        if (savingsType === 'Avoidance') {
+            const calcPercent = Math.max(0, basePercent - negPercent)
+            const savingsAmount = newCurrentPrice * (calcPercent / 100)
+            const newPrice = newCurrentPrice - savingsAmount
+            setNegotiatedPrice(newPrice > 0 ? newPrice : 0)
+        } else {
+            const savingsAmount = newCurrentPrice * (percentage / 100)
+            const newPrice = newCurrentPrice - savingsAmount
             setNegotiatedPrice(newPrice > 0 ? newPrice : 0)
         }
-    }, [percentage, negotiationType, product, currentPrice])
-
-    // Effect to update percentage when price changes manually
-    useEffect(() => {
-        if (negotiationType === 'price' && product && currentPrice > 0) {
-            const savingsAmount = currentPrice - negotiatedPrice
-            const newPercent = (savingsAmount / currentPrice) * 100
-            setPercentage(newPercent)
-        }
-    }, [negotiatedPrice, negotiationType, product, currentPrice])
+    }
 
     if (!isOpen || !product) return null
 
     // Calculations
-    const calculatedPercentage = savingsType === 'Avoidance' ? Math.max(0, basePercent - negPercent) : percentage;
-    const unitSavings = savingsType === 'Avoidance' ? currentPrice * (calculatedPercentage / 100) : (currentPrice - negotiatedPrice)
+    const unitSavings = currentPrice - negotiatedPrice
     const totalSavings = unitSavings * consumption * months
 
     const formatCurrency = (value: number) => {
@@ -87,7 +119,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
         onSave({
             ...product,
             precio_actual: currentPrice,
-            precio_negociado: savingsType === 'Avoidance' ? currentPrice - unitSavings : negotiatedPrice,
+            precio_negociado: negotiatedPrice,
             cantidad_mensual: consumption,
             tipo: savingsType,
             months: months,
@@ -136,7 +168,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                         <input
                                             type="number"
                                             value={currentPrice}
-                                            onChange={(e) => setCurrentPrice(parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => handleCurrentPriceChange(parseFloat(e.target.value) || 0)}
                                             className="w-full pl-7 pr-3 py-1 bg-white border border-[#254153]/20 rounded focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-bold text-slate-900 text-lg"
                                         />
                                     </div>
@@ -182,7 +214,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                                 <input
                                                     type="number"
                                                     value={negotiatedPrice}
-                                                    onChange={(e) => setNegotiatedPrice(parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => updateFromPrice(parseFloat(e.target.value) || 0)}
                                                     className="w-full pl-8 pr-4 py-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#254153] focus:border-[#254153] outline-none transition-all font-semibold text-lg"
                                                 />
                                             </>
@@ -191,7 +223,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                                 <input
                                                     type="number"
                                                     value={percentage}
-                                                    onChange={(e) => setPercentage(parseFloat(e.target.value) || 0)}
+                                                    onChange={(e) => updateFromPercentage(parseFloat(e.target.value) || 0)}
                                                     className="w-full pl-4 pr-8 py-3 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#254153] focus:border-[#254153] outline-none transition-all font-semibold text-lg"
                                                 />
                                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">%</span>
@@ -212,7 +244,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                                     <input
                                                         type="number"
                                                         value={basePercent}
-                                                        onChange={(e) => setBasePercent(parseFloat(e.target.value) || 0)}
+                                                        onChange={(e) => updateFromAvoidance(parseFloat(e.target.value) || 0, negPercent)}
                                                         className="w-full pl-3 pr-8 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#254153] outline-none transition-all"
                                                     />
                                                     <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
@@ -224,7 +256,7 @@ export default function ProductNegotiationModal({ isOpen, onClose, product, onSa
                                                     <input
                                                         type="number"
                                                         value={negPercent}
-                                                        onChange={(e) => setNegPercent(parseFloat(e.target.value) || 0)}
+                                                        onChange={(e) => updateFromAvoidance(basePercent, parseFloat(e.target.value) || 0)}
                                                         className="w-full pl-3 pr-8 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#254153] outline-none transition-all"
                                                     />
                                                     <Percent className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />

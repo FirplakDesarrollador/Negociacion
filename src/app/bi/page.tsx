@@ -15,7 +15,8 @@ import {
     Users,
     Activity,
     Download,
-    Home
+    Home,
+    Hash
 } from 'lucide-react'
 import SearchableSelect from '@/components/SearchableSelect'
 import {
@@ -47,6 +48,7 @@ export default function BIVisualsPage() {
     const [dateTo, setDateTo] = useState(today)
     const [selectedSupplier, setSelectedSupplier] = useState('All')
     const [selectedProduct, setSelectedProduct] = useState('All')
+    const [selectedNegId, setSelectedNegId] = useState('All')
 
     // Data
     const [history, setHistory] = useState<any[]>([])
@@ -86,25 +88,31 @@ export default function BIVisualsPage() {
                 (item.supplier_name || item.Neg_productos?.supplier_name) === selectedSupplier
             const productMatch = selectedProduct === 'All' ||
                 item.Neg_productos?.descripcion === selectedProduct
+            const negIdMatch = selectedNegId === 'All' ||
+                item.negociacion_id === selectedNegId
 
-            return date >= dateFrom && date <= dateTo && supplierMatch && productMatch
+            return date >= dateFrom && date <= dateTo && supplierMatch && productMatch && negIdMatch
         })
-    }, [history, dateFrom, dateTo, selectedSupplier, selectedProduct])
+    }, [history, dateFrom, dateTo, selectedSupplier, selectedProduct, selectedNegId])
 
     const filterOptions = useMemo(() => {
         const suppliers = new Set<string>()
         const products = new Set<string>()
+        const negIds = new Set<string>()
 
         history.forEach(item => {
             const sName = item.supplier_name || item.Neg_productos?.supplier_name
             const pDesc = item.Neg_productos?.descripcion
+            const nId = item.negociacion_id
             if (sName) suppliers.add(sName)
             if (pDesc) products.add(pDesc)
+            if (nId) negIds.add(nId)
         })
 
         return {
             suppliers: Array.from(suppliers).sort(),
-            products: Array.from(products).sort()
+            products: Array.from(products).sort(),
+            negIds: Array.from(negIds).sort()
         }
     }, [history])
 
@@ -312,6 +320,17 @@ export default function BIVisualsPage() {
                             value={dateTo}
                             onChange={(e) => setDateTo(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#254153]/10"
+                        />
+                    </div>
+                    <div className="flex-1 w-full relative z-30">
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
+                            <Hash className="w-3 h-3" /> ID Neg
+                        </label>
+                        <SearchableSelect
+                            value={selectedNegId}
+                            onChange={setSelectedNegId}
+                            options={['All', ...filterOptions.negIds].map(id => ({ value: id, label: id === 'All' ? 'Todos los IDs' : id }))}
+                            searchPlaceholder="Buscar ID..."
                         />
                     </div>
                     <div className="flex-[1.5] w-full relative z-20">
@@ -534,9 +553,9 @@ export default function BIVisualsPage() {
                                     <tr key={i} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             {item.negociacion_id ? (
-                                                <span className="text-[10px] font-mono font-bold text-[#254153] bg-blue-50 px-2 py-1 rounded border border-blue-200 block truncate max-w-[100px]" title={item.negociacion_id}>
+                                                <button onClick={() => router.push(`/negotiation/${item.negociacion_id}`)} className="text-[10px] font-mono font-bold text-[#254153] hover:text-white bg-blue-50 hover:bg-[#254153] px-2 py-1 rounded border border-blue-200 block truncate max-w-[100px] transition-colors cursor-pointer text-left" title={`Ir a negociación ${item.negociacion_id}`}>
                                                     {item.negociacion_id.split('-').slice(0, 2).join('-')}
-                                                </span>
+                                                </button>
                                             ) : (
                                                 <span className="text-[10px] text-slate-400 font-mono">N/A</span>
                                             )}
