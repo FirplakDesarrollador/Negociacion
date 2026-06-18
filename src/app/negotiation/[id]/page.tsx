@@ -20,15 +20,27 @@ import ProductNegotiationModal from '@/components/ProductNegotiationModal'
 import BulkNegotiatorModal from '@/components/BulkNegotiatorModal'
 
 
-export default function NegotiationPage({ params }: { params: Promise<{ id: string }> }) {
-    // Unwrap params using React.use()
+export default function NegotiationPage({ 
+    params, 
+    searchParams 
+}: { 
+    params: Promise<{ id: string }>,
+    searchParams: Promise<{ neg_id?: string }> 
+}) {
+    // Unwrap params and searchParams using React.use()
     const { id } = use(params)
+    const sParams = use(searchParams)
+    const negId = sParams?.neg_id
 
     const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [supplier, setSupplier] = useState<any>(null)
     const [supplierName, setSupplierName] = useState('Cargando...')
     const [products, setProducts] = useState<any[]>([])
+
+    // Historical Mode State
+    const [isHistoricalMode, setIsHistoricalMode] = useState(false)
+    const [viewedNegId, setViewedNegId] = useState<string | null>(null)
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -44,7 +56,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
     useEffect(() => {
         loadData()
-    }, [id])
+    }, [id, negId])
 
     const loadData = async () => {
         setLoading(true)
@@ -79,8 +91,6 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             // Resolve the stable ID for database lookups (Negotiated products)
             const stableId = supplierData?.nit || supplierData?.codigo || id
 
-            // 2. Fetch Products from Neg_base
-            // We search by Provedor or Codigo_provedor based on what was selected
             // 2. Fetch Products from Neg_base (Master)
             let { data: baseData, error: baseError } = await supabase
                 .from('Neg_base')
@@ -89,54 +99,136 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
             if (baseError) throw baseError
 
-            // 3. Fetch Overrides from Neg_productos (Operational)
-            // We search by stableId OR supplier_name for maximum persistence
-            let opQuery = supabase.from('Neg_productos').select('*')
+            let initializedProducts = []
 
-            if (supplierData?.proveedor) {
-                opQuery = opQuery.or(`supplier_id.eq."${stableId}",supplier_name.eq."${supplierData.proveedor}"`)
+            if (negId) {
+                setIsHistoricalMode(true)
+                setViewedNegId(negId)
+
+                // Fetch historical overrides for this neg_id
+                const { data: historicalData, error: histError } = await supabase
+                    .from('Neg_historial_precios')
+                    .select(`
+                        *,
+                        Neg_productos (
+                            base_id
+                        )
+                    `)
+                    .eq('negociacion_id', negId)
+
+                if (histError) throw histError
+
+                initializedProducts = (baseData || []).map((p: any) => {
+                    const parseNumeric = (str: string | null) => {
+                        if (!str) return 0
+                        let clean = str.replace(/\./g, '')
+                        clean = clean.replace(/,/g, '.')
+                        return parseFloat(clean) || 0
+                    }
+
+                    const basePrice = parseNumeric(p.Precio)
+                    const quantity = parseNumeric(p.Cantidad)
+
+                    // Find match in historicalData
+                    const hist = (historicalData || []).find(h => h.Neg_productos?.base_id == p.Id)
+
+                    if (hist) {
+                        const prevPrice = hist.precio_anterior
+                        const newPrice = hist.precio_nuevo
+                        const cant = hist.cantidad_mensual !== null && hist.cantidad_mensual >= 0 ? hist.cantidad_mensual : quantity
+                        
+                        const ahorroUnitario = prevPrice - newPrice
+                        const ahorroPorcentaje = prevPrice > 0 ? (ahorroUnitario / prevPrice) * 100 : 0
+                        const ahorroTotal = ahorroUnitario * cant * 12
+
+                        return {
+                            id: p.Id,
+                            db_id: hist.id,
+                            descripcion: p.Descripcion_articulo || 'Sin descripción',
+                            precio_actual: prevPrice,
+                            precio_negociado: newPrice,
+                            cantidad_mensual: cant,
+                            tipo: hist.tipo || 'Ahorro',
+                            ahorro_unitario: ahorroUnitario,
+                            ahorro_porcentaje: ahorroPorcentaje,
+                            ahorro_total: ahorroTotal,
+                            months: 12,
+                            unidad: p.Unidad_de_medida,
+                            codigo_articulo: p.Codigo_Articulo,
+                            porcentaje_base: hist.porcentaje_base || 0,
+                            porcentaje_negociado: hist.porcentaje_negociado || 0,
+                            comentarios: hist.comentarios || ''
+                        }
+                    } else {
+                        // Unmodified in this negotiation session
+                        return {
+                            id: p.Id,
+                            descripcion: p.Descripcion_articulo || 'Sin descripción',
+                            precio_actual: basePrice,
+                            precio_negociado: basePrice,
+                            cantidad_mensual: quantity,
+                            tipo: 'Ahorro',
+                            ahorro_unitario: 0,
+                            ahorro_porcentaje: 0,
+                            ahorro_total: 0,
+                            months: 12,
+                            unidad: p.Unidad_de_medida,
+                            codigo_articulo: p.Codigo_Articulo,
+                            porcentaje_base: 0,
+                            porcentaje_negociado: 0,
+                            comentarios: ''
+                        }
+                    }
+                })
             } else {
-                opQuery = opQuery.eq('supplier_id', stableId)
+                setIsHistoricalMode(false)
+                setViewedNegId(null)
+
+                // 3. Fetch Overrides from Neg_productos (Operational)
+                let opQuery = supabase.from('Neg_productos').select('*')
+
+                if (supplierData?.proveedor) {
+                    opQuery = opQuery.or(`supplier_id.eq."${stableId}",supplier_name.eq."${supplierData.proveedor}"`)
+                } else {
+                    opQuery = opQuery.eq('supplier_id', stableId)
+                }
+
+                let { data: operationalData } = await opQuery
+
+                initializedProducts = (baseData || []).map((p: any) => {
+                    const parseNumeric = (str: string | null) => {
+                        if (!str) return 0
+                        let clean = str.replace(/\./g, '')
+                        clean = clean.replace(/,/g, '.')
+                        return parseFloat(clean) || 0
+                    }
+
+                    const basePrice = parseNumeric(p.Precio)
+                    const override = (operationalData || []).find(o => o.base_id == p.Id)
+
+                    const currentPrice = override ? override.precio_actual : basePrice
+                    const quantity = override ? override.cantidad_mensual : parseNumeric(p.Cantidad)
+
+                    return {
+                        id: p.Id,
+                        db_id: override?.id,
+                        descripcion: p.Descripcion_articulo || 'Sin descripción',
+                        precio_actual: currentPrice,
+                        precio_negociado: currentPrice,
+                        cantidad_mensual: quantity,
+                        tipo: override?.tipo || 'Ahorro',
+                        ahorro_unitario: 0,
+                        ahorro_porcentaje: 0,
+                        ahorro_total: 0,
+                        months: 12,
+                        unidad: p.Unidad_de_medida,
+                        codigo_articulo: p.Codigo_Articulo,
+                        porcentaje_base: override?.porcentaje_base || 0,
+                        porcentaje_negociado: override?.porcentaje_negociado || 0,
+                        comentarios: override?.comentarios || ''
+                    }
+                })
             }
-
-            let { data: operationalData } = await opQuery
-
-            const initializedProducts = (baseData || []).map((p: any) => {
-                const parseNumeric = (str: string | null) => {
-                    if (!str) return 0
-                    // Colombian format: 1.000.000,00 or 1.000.000
-                    // Remove dots (thousands)
-                    let clean = str.replace(/\./g, '')
-                    // Replace comma with dot (decimal)
-                    clean = clean.replace(/,/g, '.')
-                    return parseFloat(clean) || 0
-                }
-
-                // Check for operational override
-                const override = (operationalData || []).find(o => o.base_id == p.Id)
-
-                const basePrice = parseNumeric(p.Precio)
-                const currentPrice = override ? override.precio_actual : basePrice
-                const quantity = override ? override.cantidad_mensual : parseNumeric(p.Cantidad)
-
-                return {
-                    id: p.Id, // We use base_id as the primary reference in the UI
-                    db_id: override?.id, // Existing Neg_productos ID if any
-                    descripcion: p.Descripcion_articulo || 'Sin descripción',
-                    precio_actual: currentPrice,
-                    precio_negociado: currentPrice,
-                    cantidad_mensual: quantity,
-                    tipo: override?.tipo || 'Ahorro',
-                    ahorro_unitario: 0,
-                    ahorro_porcentaje: 0,
-                    ahorro_total: 0,
-                    months: 12,
-                    unidad: p.Unidad_de_medida,
-                    codigo_articulo: p.Codigo_Articulo,
-                    porcentaje_base: override?.porcentaje_base || 0,
-                    porcentaje_negociado: override?.porcentaje_negociado || 0
-                }
-            })
 
             setProducts(initializedProducts)
             calculateTotals(initializedProducts)
@@ -179,7 +271,7 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             ahorro_unitario: ahorroUnitario,
             ahorro_porcentaje: ahorroPorcentaje,
             ahorro_total: ahorroTotal,
-            isDirty: true // Mark as explicitly negotiated
+            isDirty: true
         }
 
         const updatedList = products.map(p => p.id === finalProduct.id ? finalProduct : p)
@@ -192,7 +284,6 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
 
-            // Let precio_negociado capture the difference for History tracking even in Avoidance
             const resultPrecioNegociado = basePriceForCalc - ahorroUnitario
 
             const skuVal = settings.skuConsumptions[product.id]
@@ -224,7 +315,6 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
     }
 
     const handleGlobalSave = async () => {
-        // Filter products that have been negotiated (price changed or explicitly marked via modal)
         const changedProducts = products.filter(p => p.isDirty || p.precio_negociado !== p.precio_actual)
 
         if (changedProducts.length === 0) {
@@ -238,7 +328,6 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
         try {
             setLoading(true)
 
-            // Fetch existing IDs to find the max consecutive number
             const { data: existingIds } = await supabase
                 .from('Neg_historial_precios')
                 .select('negociacion_id')
@@ -250,12 +339,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 existingIds.forEach(row => {
                     const val = row.negociacion_id
                     if (val) {
-                        // Extract number if it has a prefix, or just parse if it's already a number
                         const cleanVal = val.replace(/[^0-9]/g, '')
                         if (cleanVal) {
                             const num = parseInt(cleanVal, 10)
-                            // We only consider it if it was a simple number or NEG-X format, 
-                            // to avoid large timestamps from old UUIDs messing up the sequence
                             if (num > maxId && num < 1000000) { 
                                 maxId = num
                             }
@@ -265,25 +351,18 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 nextId = maxId + 1
             }
 
-            // Generate a consecutive ID
             const currentNegotiationId = nextId.toString()
-
-            // Resolve stable supplier identity for storage (Consistent with loadData)
             const stableSupplierId = supplier?.nit || supplier?.codigo || id
 
             for (const product of changedProducts) {
-                // 1. Determine the master price to store
-                // Only "Ahorro" (Hard Savings) updates the current price. 
-                // "Avoidance" stays at the current price.
                 const priceToStore = product.tipo === 'Ahorro' ? product.precio_negociado : product.precio_actual
 
-                // 2. Upsert into Neg_productos (Operational)
                 const { data: upsertData, error: upsertError } = await supabase
                     .from('Neg_productos')
                     .upsert({
                         base_id: product.id,
                         supplier_id: stableSupplierId,
-                        supplier_name: supplierName, // Store Name for stable filtering
+                        supplier_name: supplierName,
                         descripcion: product.descripcion,
                         precio_actual: priceToStore,
                         cantidad_mensual: product.cantidad_mensual,
@@ -299,13 +378,12 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
                 if (upsertError) throw upsertError
 
-                // 2. Insert History Log
                 const { error: historyError } = await supabase
                     .from('Neg_historial_precios')
                     .insert({
                         product_id: upsertData.id,
                         supplier_id: stableSupplierId,
-                        supplier_name: supplierName, // Store Name for stable filtering
+                        supplier_name: supplierName,
                         precio_anterior: product.precio_actual,
                         precio_nuevo: product.precio_negociado,
                         ahorro_generado: product.ahorro_total,
@@ -321,8 +399,6 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             }
 
             alert('Negociación guardada exitosamente.')
-
-            // Reload data to reflect that "Current Price" is now the negotiated price
             await loadData()
 
         } catch (error) {
@@ -396,6 +472,35 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+                {/* Historical Mode Banner */}
+                {isHistoricalMode && (
+                    <div className="bg-[#254153] text-white px-6 py-4 rounded-2xl mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm border border-slate-700 animate-in fade-in slide-in-from-top-4 duration-300">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/10 p-2 rounded-xl">
+                                <History className="w-6 h-6 text-blue-300" />
+                            </div>
+                            <div className="text-left">
+                                <h3 className="font-bold">Visualizando Negociación Histórica</h3>
+                                <p className="text-xs text-blue-200">ID Negociación: #{viewedNegId} • Modo Solo Lectura</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => router.push('/bi')}
+                                className="bg-transparent hover:bg-white/10 border border-white/30 text-white font-bold text-xs py-2.5 px-4 rounded-xl transition-colors cursor-pointer"
+                            >
+                                Volver a BI
+                            </button>
+                            <button
+                                onClick={() => router.push(`/negotiation/${id}`)}
+                                className="bg-white hover:bg-slate-100 text-[#254153] font-bold text-xs py-2.5 px-4 rounded-xl transition-colors shadow-sm cursor-pointer"
+                            >
+                                Ir a Negociación Activa
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Supplier Header Information */}
                 <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm mb-6 text-center">
                     <h2 className="text-3xl font-bold text-[#254153] mb-2">{supplierName}</h2>
@@ -418,13 +523,15 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                 />
                             </div>
                         </div>
-                        <button
-                            onClick={() => setIsBulkModalOpen(true)}
-                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
-                        >
-                            <Calculator className="w-4 h-4" />
-                            Negociador Masivo
-                        </button>
+                        {!isHistoricalMode && (
+                            <button
+                                onClick={() => setIsBulkModalOpen(true)}
+                                className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 w-full md:w-auto justify-center"
+                            >
+                                <Calculator className="w-4 h-4" />
+                                Negociador Masivo
+                            </button>
+                        )}
                     </div>
 
                     <div className="overflow-x-auto">
@@ -447,8 +554,8 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                 {filteredProducts.map((product) => (
                                     <tr
                                         key={product.id}
-                                        onClick={() => handleOpenModal(product)}
-                                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                                        onClick={isHistoricalMode ? undefined : () => handleOpenModal(product)}
+                                        className={`transition-colors border-b border-slate-100 ${isHistoricalMode ? '' : 'hover:bg-slate-50 cursor-pointer group'}`}
                                     >
                                         <td className="px-6 py-4 align-middle">
                                             <span className="font-medium text-slate-800 block mb-1 group-hover:text-[#254153] transition-colors">{product.descripcion}</span>
@@ -485,23 +592,29 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 align-middle" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="text"
-                                                value={product.comentarios || ''}
-                                                onChange={(e) => {
-                                                    const updatedList = products.map(p => 
-                                                        p.id === product.id ? { ...p, comentarios: e.target.value, isDirty: true } : p
-                                                    )
-                                                    setProducts(updatedList)
-                                                }}
-                                                placeholder="Añadir comentario..."
-                                                className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-[#254153] focus:border-[#254153]"
-                                            />
+                                            {isHistoricalMode ? (
+                                                <span className="text-xs text-slate-500">{product.comentarios || '-'}</span>
+                                            ) : (
+                                                <input
+                                                    type="text"
+                                                    value={product.comentarios || ''}
+                                                    onChange={(e) => {
+                                                        const updatedList = products.map(p => 
+                                                            p.id === product.id ? { ...p, comentarios: e.target.value, isDirty: true } : p
+                                                        )
+                                                        setProducts(updatedList)
+                                                    }}
+                                                    placeholder="Añadir comentario..."
+                                                    className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-[#254153] focus:border-[#254153]"
+                                                />
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right align-middle">
-                                            <button className="text-blue-500 hover:scale-110 transition-transform opacity-0 group-hover:opacity-100">
-                                                <Calculator className="w-5 h-5" />
-                                            </button>
+                                            {!isHistoricalMode && (
+                                                <button className="text-blue-500 hover:scale-110 transition-transform opacity-0 group-hover:opacity-100">
+                                                    <Calculator className="w-5 h-5" />
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}
@@ -514,7 +627,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-20">
                     <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <p className="text-slate-500 text-sm font-semibold uppercase tracking-wide mb-1">Ahorro Total Estimado</p>
+                            <p className="text-slate-500 text-sm font-semibold uppercase tracking-wide mb-1">
+                                {isHistoricalMode ? 'Ahorro Registrado' : 'Ahorro Total Estimado'}
+                            </p>
                             <h3 className="text-3xl font-bold text-emerald-600">{formatCurrency(totalSavings)}</h3>
                         </div>
                         <div className="p-4 bg-emerald-50 rounded-full">
@@ -524,7 +639,9 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
 
                     <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <p className="text-slate-500 text-sm font-semibold uppercase tracking-wide mb-1">Avoidance Total Estimado</p>
+                            <p className="text-slate-500 text-sm font-semibold uppercase tracking-wide mb-1">
+                                {isHistoricalMode ? 'Avoidance Registrado' : 'Avoidance Total Estimado'}
+                            </p>
                             <h3 className="text-3xl font-bold text-amber-600">{formatCurrency(totalAvoidance)}</h3>
                         </div>
                         <div className="p-4 bg-amber-50 rounded-full">
@@ -538,20 +655,39 @@ export default function NegotiationPage({ params }: { params: Promise<{ id: stri
             {/* Bottom Actions Bar */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.1)] z-40">
                 <main className="max-w-7xl mx-auto flex gap-4">
-                    <button
-                        onClick={() => router.push(`/negotiation/${id}/history`)}
-                        className="flex-1 bg-white border-2 border-[#254153] text-[#254153] hover:bg-slate-50 font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
-                    >
-                        <History className="w-5 h-5" />
-                        Ver Historial
-                    </button>
-                    <button
-                        onClick={handleGlobalSave}
-                        className="flex-1 bg-[#254153] hover:bg-[#1a2f3d] text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-[#254153]/20 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99]"
-                    >
-                        <Save className="w-5 h-5" />
-                        Guardar Cambios
-                    </button>
+                    {isHistoricalMode ? (
+                        <>
+                            <button
+                                onClick={() => router.push('/bi')}
+                                className="flex-1 bg-white border-2 border-[#254153] text-[#254153] hover:bg-slate-50 font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                Volver a BI
+                            </button>
+                            <button
+                                onClick={() => router.push(`/negotiation/${id}`)}
+                                className="flex-1 bg-[#254153] hover:bg-[#1a2f3d] text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-[#254153]/20 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99] cursor-pointer"
+                            >
+                                Ir a Negociación Activa
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={() => router.push(`/negotiation/${id}/history`)}
+                                className="flex-1 bg-white border-2 border-[#254153] text-[#254153] hover:bg-slate-50 font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <History className="w-5 h-5" />
+                                Ver Historial
+                            </button>
+                            <button
+                                onClick={handleGlobalSave}
+                                className="flex-1 bg-[#254153] hover:bg-[#1a2f3d] text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-[#254153]/20 transition-all flex items-center justify-center gap-2 transform active:scale-[0.99] cursor-pointer"
+                            >
+                                <Save className="w-5 h-5" />
+                                Guardar Cambios
+                            </button>
+                        </>
+                    )}
                 </main>
             </div>
         </div>

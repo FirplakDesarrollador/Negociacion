@@ -553,7 +553,7 @@ export default function BIVisualsPage() {
                                     <tr key={i} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4">
                                             {item.negociacion_id ? (
-                                                <button onClick={() => router.push(`/negotiation/${item.negociacion_id}`)} className="text-[10px] font-mono font-bold text-[#254153] hover:text-white bg-blue-50 hover:bg-[#254153] px-2 py-1 rounded border border-blue-200 block truncate max-w-[100px] transition-colors cursor-pointer text-left" title={`Ir a negociación ${item.negociacion_id}`}>
+                                                <button onClick={() => router.push(`/negotiation/${item.supplier_id}?neg_id=${item.negociacion_id}`)} className="text-[10px] font-mono font-bold text-[#254153] hover:text-white bg-blue-50 hover:bg-[#254153] px-2 py-1 rounded border border-blue-200 block truncate max-w-[100px] transition-colors cursor-pointer text-left" title={`Ir a negociación ${item.negociacion_id}`}>
                                                     {item.negociacion_id.split('-').slice(0, 2).join('-')}
                                                 </button>
                                             ) : (
