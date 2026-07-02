@@ -219,6 +219,137 @@ export default function MCIPage() {
         localStorage.setItem('mci_compromisos', JSON.stringify(compromisos))
     }, [compromisos])
 
+    // --- SNAPSHOTS (PHOTOS) LOGIC FOR MCI SNAPSHOTS ---
+    const [initiativesSnapshots, setInitiativesSnapshots] = useState<any[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('mci_initiatives_snapshots')
+            if (saved) {
+                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+            }
+        }
+        return []
+    })
+
+    const [cotizacionesSnapshots, setCotizacionesSnapshots] = useState<any[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('mci_cotizaciones_snapshots')
+            if (saved) {
+                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+            }
+        }
+        return []
+    })
+
+    const [compromisosSnapshots, setCompromisosSnapshots] = useState<any[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('mci_compromisos_snapshots')
+            if (saved) {
+                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+            }
+        }
+        return []
+    })
+
+    // Active/Selected Snapshot filters
+    const [selectedSnapshotPred1, setSelectedSnapshotPred1] = useState<string>('active')
+    const [selectedSnapshotPred2, setSelectedSnapshotPred2] = useState<string>('active')
+    const [selectedSnapshotCompromisos, setSelectedSnapshotCompromisos] = useState<string>('active')
+
+    // Dates for saving snapshots
+    const [reviewDatePred1, setReviewDatePred1] = useState(() => new Date().toISOString().split('T')[0])
+    const [reviewDatePred2, setReviewDatePred2] = useState(() => new Date().toISOString().split('T')[0])
+    const [reviewDateCompromisos, setReviewDateCompromisos] = useState(() => new Date().toISOString().split('T')[0])
+
+    // Sync snapshots to localstorage
+    useEffect(() => {
+        localStorage.setItem('mci_initiatives_snapshots', JSON.stringify(initiativesSnapshots))
+    }, [initiativesSnapshots])
+
+    useEffect(() => {
+        localStorage.setItem('mci_cotizaciones_snapshots', JSON.stringify(cotizacionesSnapshots))
+    }, [cotizacionesSnapshots])
+
+    useEffect(() => {
+        localStorage.setItem('mci_compromisos_snapshots', JSON.stringify(compromisosSnapshots))
+    }, [compromisosSnapshots])
+
+    // Snapshot actions
+    const handleSaveSnapshotPred1 = () => {
+        if (!reviewDatePred1) return alert('Por favor selecciona una fecha.')
+        const exists = initiativesSnapshots.some(s => s.date === reviewDatePred1)
+        if (exists && !confirm(`Ya existe una foto para la fecha ${reviewDatePred1}. ¿Deseas sobrescribirla?`)) return
+        setInitiativesSnapshots(prev => {
+            const filtered = prev.filter(s => s.date !== reviewDatePred1)
+            return [...filtered, { date: reviewDatePred1, items: JSON.parse(JSON.stringify(initiatives)) }].sort((a, b) => b.date.localeCompare(a.date))
+        })
+        setSelectedSnapshotPred1(reviewDatePred1)
+        alert('Foto guardada correctamente.')
+    }
+
+    const handleDeleteSnapshotPred1 = (date: string) => {
+        if (confirm(`¿Estás seguro de eliminar la foto del ${date}?`)) {
+            setInitiativesSnapshots(prev => prev.filter(s => s.date !== date))
+            setSelectedSnapshotPred1('active')
+        }
+    }
+
+    const handleSaveSnapshotPred2 = () => {
+        if (!reviewDatePred2) return alert('Por favor selecciona una fecha.')
+        const exists = cotizacionesSnapshots.some(s => s.date === reviewDatePred2)
+        if (exists && !confirm(`Ya existe una foto para la fecha ${reviewDatePred2}. ¿Deseas sobrescribirla?`)) return
+        setCotizacionesSnapshots(prev => {
+            const filtered = prev.filter(s => s.date !== reviewDatePred2)
+            return [...filtered, { date: reviewDatePred2, items: JSON.parse(JSON.stringify(cotizaciones)) }].sort((a, b) => b.date.localeCompare(a.date))
+        })
+        setSelectedSnapshotPred2(reviewDatePred2)
+        alert('Foto guardada correctamente.')
+    }
+
+    const handleDeleteSnapshotPred2 = (date: string) => {
+        if (confirm(`¿Estás seguro de eliminar la foto del ${date}?`)) {
+            setCotizacionesSnapshots(prev => prev.filter(s => s.date !== date))
+            setSelectedSnapshotPred2('active')
+        }
+    }
+
+    const handleSaveSnapshotCompromisos = () => {
+        if (!reviewDateCompromisos) return alert('Por favor selecciona una fecha.')
+        const exists = compromisosSnapshots.some(s => s.date === reviewDateCompromisos)
+        if (exists && !confirm(`Ya existe una foto para la fecha ${reviewDateCompromisos}. ¿Deseas sobrescribirla?`)) return
+        setCompromisosSnapshots(prev => {
+            const filtered = prev.filter(s => s.date !== reviewDateCompromisos)
+            return [...filtered, { date: reviewDateCompromisos, items: JSON.parse(JSON.stringify(compromisos)) }].sort((a, b) => b.date.localeCompare(a.date))
+        })
+        setSelectedSnapshotCompromisos(reviewDateCompromisos)
+        alert('Foto guardada correctamente.')
+    }
+
+    const handleDeleteSnapshotCompromisos = (date: string) => {
+        if (confirm(`¿Estás seguro de eliminar la foto del ${date}?`)) {
+            setCompromisosSnapshots(prev => prev.filter(s => s.date !== date))
+            setSelectedSnapshotCompromisos('active')
+        }
+    }
+
+    // Current views (active or snapshot)
+    const currentInitiatives = useMemo(() => {
+        if (selectedSnapshotPred1 === 'active') return initiatives
+        const snap = initiativesSnapshots.find(s => s.date === selectedSnapshotPred1)
+        return snap ? snap.items : []
+    }, [initiatives, initiativesSnapshots, selectedSnapshotPred1])
+
+    const currentCotizaciones = useMemo(() => {
+        if (selectedSnapshotPred2 === 'active') return cotizaciones
+        const snap = cotizacionesSnapshots.find(s => s.date === selectedSnapshotPred2)
+        return snap ? snap.items : []
+    }, [cotizaciones, cotizacionesSnapshots, selectedSnapshotPred2])
+
+    const currentCompromisos = useMemo(() => {
+        if (selectedSnapshotCompromisos === 'active') return compromisos
+        const snap = compromisosSnapshots.find(s => s.date === selectedSnapshotCompromisos)
+        return snap ? snap.items : []
+    }, [compromisos, compromisosSnapshots, selectedSnapshotCompromisos])
+
     // Filters & Sorting for Predictiva 1
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
     const [filters, setFilters] = useState<Record<string, string>>({})
@@ -339,7 +470,7 @@ export default function MCIPage() {
     }
 
     const filteredAndSortedData = useMemo(() => {
-        let result = [...initiatives];
+        let result = [...currentInitiatives];
         Object.keys(filters).forEach(key => {
             if (filters[key]) {
                 const filterValue = filters[key].toLowerCase();
@@ -368,7 +499,7 @@ export default function MCIPage() {
             });
         }
         return result;
-    }, [initiatives, sortConfig, filters]);
+    }, [currentInitiatives, sortConfig, filters]);
 
     const handleCotSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -383,7 +514,7 @@ export default function MCIPage() {
     }
 
     const filteredAndSortedCotizaciones = useMemo(() => {
-        let result = [...cotizaciones];
+        let result = [...currentCotizaciones];
         Object.keys(cotFilters).forEach(key => {
             if (cotFilters[key]) {
                 const filterValue = cotFilters[key].toLowerCase();
@@ -412,7 +543,7 @@ export default function MCIPage() {
             });
         }
         return result;
-    }, [cotizaciones, cotSortConfig, cotFilters]);
+    }, [currentCotizaciones, cotSortConfig, cotFilters]);
 
     const Th = ({ label, sortKey, width }: { label: string, sortKey: string, width?: string }) => (
         <th className={`px-3 py-4 align-top ${width || 'auto'}`}>
@@ -601,15 +732,80 @@ export default function MCIPage() {
                     {/* PREDICTIVA 1 (DESARROLLO DE INICIATIVAS) */}
                     {activeTab === 'pred1' && (
                         <div>
-                            <div className="bg-slate-50 p-6 border-b border-slate-200 flex items-center justify-between">
+                            <div className="bg-slate-50 p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
                                 <div>
                                     <h3 className="text-xl font-bold text-[#254153]">Desarrollo de iniciativas</h3>
                                     <p className="text-sm text-slate-500">Gestión y seguimiento de estado</p>
                                 </div>
-                                <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
-                                    Mostrando {filteredAndSortedData.length} registros
+                                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-600">Revisión Semanal:</span>
+                                        <select
+                                            value={selectedSnapshotPred1}
+                                            onChange={(e) => setSelectedSnapshotPred1(e.target.value)}
+                                            className="text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg border border-slate-200 bg-white cursor-pointer outline-none focus:ring-1 focus:ring-[#254153]"
+                                        >
+                                            <option value="active">Edición Activa</option>
+                                            {initiativesSnapshots.map(snap => (
+                                                <option key={snap.date} value={snap.date}>Revisión - {snap.date}</option>
+                                            ))}
+                                        </select>
+                                        {selectedSnapshotPred1 !== 'active' && (
+                                            <button
+                                                onClick={() => handleDeleteSnapshotPred1(selectedSnapshotPred1)}
+                                                className="text-xs text-rose-500 hover:text-rose-700 font-bold ml-1 cursor-pointer"
+                                                title="Eliminar esta foto histórica"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {selectedSnapshotPred1 === 'active' ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="date"
+                                                value={reviewDatePred1}
+                                                onChange={(e) => setReviewDatePred1(e.target.value)}
+                                                className="text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white outline-none focus:border-[#254153]"
+                                            />
+                                            <button
+                                                onClick={handleSaveSnapshotPred1}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                            >
+                                                Guardar Foto
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setSelectedSnapshotPred1('active')}
+                                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                        >
+                                            Volver a Edición
+                                        </button>
+                                    )}
+                                    
+                                    <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
+                                        Mostrando {filteredAndSortedData.length} registros
+                                    </div>
                                 </div>
                             </div>
+
+                            {selectedSnapshotPred1 !== 'active' && (
+                                <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between text-amber-800 text-xs font-semibold">
+                                    <span className="flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                                        Modo Histórico: Estás viendo la foto del {selectedSnapshotPred1}. Los campos están bloqueados.
+                                    </span>
+                                    <button 
+                                        onClick={() => setSelectedSnapshotPred1('active')}
+                                        className="text-indigo-600 hover:underline cursor-pointer"
+                                    >
+                                        Ir al flujo activo
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
@@ -639,7 +835,8 @@ export default function MCIPage() {
                                                     <select 
                                                         value={item.dimension} 
                                                         onChange={(e) => handleUpdate(item.id, 'dimension', e.target.value)}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white"
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         {dimensiones.map(d => <option key={d} value={d}>{d}</option>)}
                                                     </select>
@@ -648,7 +845,8 @@ export default function MCIPage() {
                                                     <select 
                                                         value={item.objective} 
                                                         onChange={(e) => handleUpdate(item.id, 'objective', e.target.value)}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white min-w-[180px] whitespace-normal"
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white min-w-[180px] whitespace-normal disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         {objetivos.map(o => <option key={o} value={o}>{o}</option>)}
                                                     </select>
@@ -658,7 +856,8 @@ export default function MCIPage() {
                                                         type="date" 
                                                         value={item.startDate} 
                                                         onChange={(e) => handleUpdate(item.id, 'startDate', e.target.value)}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white"
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
@@ -666,8 +865,8 @@ export default function MCIPage() {
                                                         type="date" 
                                                         value={item.endDate} 
                                                         onChange={(e) => handleUpdate(item.id, 'endDate', e.target.value)}
-                                                        className={`w-full text-xs font-medium px-2 py-1.5 rounded border ${item.state !== 'cerrada ganada' ? 'bg-slate-100 text-slate-400 border-transparent' : 'bg-white border-slate-200'}`}
-                                                        disabled={item.state !== 'cerrada ganada'}
+                                                        className={`w-full text-xs font-medium px-2 py-1.5 rounded border ${item.state !== 'cerrada ganada' || selectedSnapshotPred1 !== 'active' ? 'bg-slate-100 text-slate-400 border-transparent' : 'bg-white border-slate-200'}`}
+                                                        disabled={item.state !== 'cerrada ganada' || selectedSnapshotPred1 !== 'active'}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-4 text-center align-middle">
@@ -679,7 +878,8 @@ export default function MCIPage() {
                                                     <select
                                                         value={item.state}
                                                         onChange={(e) => handleUpdate(item.id, 'state', e.target.value)}
-                                                        className={`w-full appearance-none outline-none text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg cursor-pointer transition-colors border-2 border-transparent hover:border-slate-200 focus:border-[#254153] ${getStateColor(item.state)}`}
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className={`w-full appearance-none outline-none text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg cursor-pointer transition-colors border-2 border-transparent hover:border-slate-200 focus:border-[#254153] disabled:cursor-not-allowed ${getStateColor(item.state)}`}
                                                     >
                                                         {states.map(s => (
                                                             <option key={s} value={s}>{s}</option>
@@ -697,23 +897,88 @@ export default function MCIPage() {
                     {/* PREDICTIVA 2 (COTIZACIONES) */}
                     {activeTab === 'pred2' && (
                         <div>
-                            <div className="bg-slate-50 p-6 border-b border-slate-200 flex items-center justify-between">
+                            <div className="bg-slate-50 p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
                                 <div>
                                     <h3 className="text-xl font-bold text-[#254153]">Cotizaciones de proveedores</h3>
                                     <p className="text-sm text-slate-500">Gestión de cotizaciones y negociaciones predictivas</p>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-600">Revisión Semanal:</span>
+                                        <select
+                                            value={selectedSnapshotPred2}
+                                            onChange={(e) => setSelectedSnapshotPred2(e.target.value)}
+                                            className="text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg border border-slate-200 bg-white cursor-pointer outline-none focus:ring-1 focus:ring-[#254153]"
+                                        >
+                                            <option value="active">Edición Activa</option>
+                                            {cotizacionesSnapshots.map(snap => (
+                                                <option key={snap.date} value={snap.date}>Revisión - {snap.date}</option>
+                                            ))}
+                                        </select>
+                                        {selectedSnapshotPred2 !== 'active' && (
+                                            <button
+                                                onClick={() => handleDeleteSnapshotPred2(selectedSnapshotPred2)}
+                                                className="text-xs text-rose-500 hover:text-rose-700 font-bold ml-1 cursor-pointer"
+                                                title="Eliminar esta foto histórica"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        )}
+                                    </div>
+                                    
+                                    {selectedSnapshotPred2 === 'active' ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="date"
+                                                value={reviewDatePred2}
+                                                onChange={(e) => setReviewDatePred2(e.target.value)}
+                                                className="text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white outline-none focus:border-[#254153]"
+                                            />
+                                            <button
+                                                onClick={handleSaveSnapshotPred2}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                            >
+                                                Guardar Foto
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setSelectedSnapshotPred2('active')}
+                                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                        >
+                                            Volver a Edición
+                                        </button>
+                                    )}
+
                                     <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
                                         Mostrando {filteredAndSortedCotizaciones.length} registros
                                     </div>
-                                    <button
-                                        onClick={handleAddCotizacion}
-                                        className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" /> Agregar Cotización
-                                    </button>
+                                    {selectedSnapshotPred2 === 'active' && (
+                                        <button
+                                            onClick={handleAddCotizacion}
+                                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Agregar Cotización
+                                        </button>
+                                    )}
                                 </div>
                             </div>
+
+                            {selectedSnapshotPred2 !== 'active' && (
+                                <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between text-amber-800 text-xs font-semibold">
+                                    <span className="flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                                        Modo Histórico: Estás viendo la foto del {selectedSnapshotPred2}. Los campos están bloqueados.
+                                    </span>
+                                    <button 
+                                        onClick={() => setSelectedSnapshotPred2('active')}
+                                        className="text-indigo-600 hover:underline cursor-pointer"
+                                    >
+                                        Ir al flujo activo
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
@@ -736,7 +1001,8 @@ export default function MCIPage() {
                                                     <select
                                                         value={item.priority}
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'priority', e.target.value)}
-                                                        className={`inline-flex items-center justify-center w-12 h-8 rounded text-sm font-bold border focus:outline-none focus:ring-1 focus:ring-[#254153] ${getPriorityColor(Number(item.priority))}`}
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className={`inline-flex items-center justify-center w-12 h-8 rounded text-sm font-bold border focus:outline-none focus:ring-1 focus:ring-[#254153] disabled:opacity-80 disabled:cursor-not-allowed ${getPriorityColor(Number(item.priority))}`}
                                                     >
                                                         <option value="1">1</option>
                                                         <option value="2">2</option>
@@ -748,14 +1014,16 @@ export default function MCIPage() {
                                                         type="text"
                                                         value={item.name}
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'name', e.target.value)}
-                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2.5 py-1.5 outline-none rounded transition-all min-w-[250px]"
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2.5 py-1.5 outline-none rounded transition-all min-w-[250px] disabled:bg-transparent"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
                                                     <select 
                                                         value={item.dimension} 
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'dimension', e.target.value)}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white"
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         {dimensiones.map(d => <option key={d} value={d}>{d}</option>)}
                                                     </select>
@@ -764,7 +1032,8 @@ export default function MCIPage() {
                                                     <select 
                                                         value={item.objective} 
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'objective', e.target.value)}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white min-w-[180px] whitespace-normal"
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white min-w-[180px] whitespace-normal disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         {objetivos.map(o => <option key={o} value={o}>{o}</option>)}
                                                     </select>
@@ -774,7 +1043,8 @@ export default function MCIPage() {
                                                         type="date" 
                                                         value={item.startDate} 
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'startDate', e.target.value)}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white"
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
@@ -782,8 +1052,8 @@ export default function MCIPage() {
                                                         type="date" 
                                                         value={item.endDate} 
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'endDate', e.target.value)}
-                                                        className={`w-full text-xs font-medium px-2 py-1.5 rounded border ${item.state !== 'cerrada ganada' ? 'bg-slate-100 text-slate-400 border-transparent' : 'bg-white border-slate-200'}`}
-                                                        disabled={item.state !== 'cerrada ganada'}
+                                                        className={`w-full text-xs font-medium px-2 py-1.5 rounded border ${item.state !== 'cerrada ganada' || selectedSnapshotPred2 !== 'active' ? 'bg-slate-100 text-slate-400 border-transparent' : 'bg-white border-slate-200'}`}
+                                                        disabled={item.state !== 'cerrada ganada' || selectedSnapshotPred2 !== 'active'}
                                                     />
                                                 </td>
                                                 <td className="px-3 py-4 text-center align-middle">
@@ -795,7 +1065,8 @@ export default function MCIPage() {
                                                     <select
                                                         value={item.state}
                                                         onChange={(e) => handleUpdateCotizacion(item.id, 'state', e.target.value)}
-                                                        className={`w-full appearance-none outline-none text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg cursor-pointer transition-colors border-2 border-transparent hover:border-slate-200 focus:border-[#254153] ${getStateColor(item.state)}`}
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className={`w-full appearance-none outline-none text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg cursor-pointer transition-colors border-2 border-transparent hover:border-slate-200 focus:border-[#254153] disabled:cursor-not-allowed ${getStateColor(item.state)}`}
                                                     >
                                                         {states.map(s => (
                                                             <option key={s} value={s}>{s}</option>
@@ -805,7 +1076,8 @@ export default function MCIPage() {
                                                 <td className="px-3 py-4 text-center align-middle">
                                                     <button
                                                         onClick={() => handleDeleteCotizacion(item.id)}
-                                                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                                                         title="Eliminar fila"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -822,23 +1094,88 @@ export default function MCIPage() {
                     {/* COMPROMISOS */}
                     {activeTab === 'compromisos' && (
                         <div>
-                            <div className="bg-slate-50 p-6 border-b border-slate-200 flex items-center justify-between">
+                            <div className="bg-slate-50 p-6 border-b border-slate-200 flex flex-col md:flex-row gap-4 items-center justify-between">
                                 <div>
                                     <h3 className="text-xl font-bold text-[#254153]">Compromisos Semanales</h3>
                                     <p className="text-sm text-slate-500">Planificación de acciones clave para esta semana</p>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
-                                        Total: {compromisos.length} compromisos
+                                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-slate-600">Revisión Semanal:</span>
+                                        <select
+                                            value={selectedSnapshotCompromisos}
+                                            onChange={(e) => setSelectedSnapshotCompromisos(e.target.value)}
+                                            className="text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg border border-slate-200 bg-white cursor-pointer outline-none focus:ring-1 focus:ring-[#254153]"
+                                        >
+                                            <option value="active">Edición Activa</option>
+                                            {compromisosSnapshots.map(snap => (
+                                                <option key={snap.date} value={snap.date}>Revisión - {snap.date}</option>
+                                            ))}
+                                        </select>
+                                        {selectedSnapshotCompromisos !== 'active' && (
+                                            <button
+                                                onClick={() => handleDeleteSnapshotCompromisos(selectedSnapshotCompromisos)}
+                                                className="text-xs text-rose-500 hover:text-rose-700 font-bold ml-1 cursor-pointer"
+                                                title="Eliminar esta foto histórica"
+                                            >
+                                                Eliminar
+                                            </button>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={handleAddCompromiso}
-                                        className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
-                                    >
-                                        <Plus className="w-3.5 h-3.5" /> Agregar Compromiso
-                                    </button>
+                                    
+                                    {selectedSnapshotCompromisos === 'active' ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="date"
+                                                value={reviewDateCompromisos}
+                                                onChange={(e) => setReviewDateCompromisos(e.target.value)}
+                                                className="text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white outline-none focus:border-[#254153]"
+                                            />
+                                            <button
+                                                onClick={handleSaveSnapshotCompromisos}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                            >
+                                                Guardar Foto
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setSelectedSnapshotCompromisos('active')}
+                                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                        >
+                                            Volver a Edición
+                                        </button>
+                                    )}
+
+                                    <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
+                                        Total: {currentCompromisos.length} compromisos
+                                    </div>
+                                    {selectedSnapshotCompromisos === 'active' && (
+                                        <button
+                                            onClick={handleAddCompromiso}
+                                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                                        >
+                                            <Plus className="w-3.5 h-3.5" /> Agregar Compromiso
+                                        </button>
+                                    )}
                                 </div>
                             </div>
+
+                            {selectedSnapshotCompromisos !== 'active' && (
+                                <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between text-amber-800 text-xs font-semibold">
+                                    <span className="flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                                        Modo Histórico: Estás viendo la foto del {selectedSnapshotCompromisos}. Los campos están bloqueados.
+                                    </span>
+                                    <button 
+                                        onClick={() => setSelectedSnapshotCompromisos('active')}
+                                        className="text-indigo-600 hover:underline cursor-pointer"
+                                    >
+                                        Ir al flujo activo
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
@@ -851,13 +1188,14 @@ export default function MCIPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {compromisos.map((item) => (
+                                        {currentCompromisos.map((item) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                                 <td className="px-6 py-4 text-center align-middle">
                                                     <select
                                                         value={item.estado}
                                                         onChange={(e) => handleUpdateCompromiso(item.id, 'estado', e.target.value)}
-                                                        className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg cursor-pointer outline-none border border-transparent transition-all ${
+                                                        disabled={selectedSnapshotCompromisos !== 'active'}
+                                                        className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg cursor-pointer outline-none border border-transparent transition-all disabled:cursor-not-allowed ${
                                                             item.estado === 'Realizado' 
                                                                 ? 'bg-emerald-100 text-emerald-800' 
                                                                 : item.estado === 'En proceso' 
@@ -876,14 +1214,16 @@ export default function MCIPage() {
                                                         value={item.compromiso}
                                                         onChange={(e) => handleUpdateCompromiso(item.id, 'compromiso', e.target.value)}
                                                         placeholder="Describa el compromiso..."
-                                                        className="w-full font-medium text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-3 py-2 outline-none rounded transition-all min-w-[300px]"
+                                                        disabled={selectedSnapshotCompromisos !== 'active'}
+                                                        className="w-full font-medium text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-3 py-2 outline-none rounded transition-all min-w-[300px] disabled:bg-transparent"
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 align-middle">
                                                     <select
                                                         value={item.responsable}
                                                         onChange={(e) => handleUpdateCompromiso(item.id, 'responsable', e.target.value)}
-                                                        className="w-full text-sm font-semibold text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#254153]"
+                                                        disabled={selectedSnapshotCompromisos !== 'active'}
+                                                        className="w-full text-sm font-semibold text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#254153] disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         <option value="Isabel">Isabel</option>
                                                         <option value="Nalle">Nalle</option>
@@ -896,13 +1236,15 @@ export default function MCIPage() {
                                                         type="date"
                                                         value={item.fecha}
                                                         onChange={(e) => handleUpdateCompromiso(item.id, 'fecha', e.target.value)}
-                                                        className="w-full text-sm font-medium text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#254153]"
+                                                        disabled={selectedSnapshotCompromisos !== 'active'}
+                                                        className="w-full text-sm font-medium text-slate-700 px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-[#254153] disabled:bg-slate-50 disabled:text-slate-500"
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 text-center align-middle">
                                                     <button
                                                         onClick={() => handleDeleteCompromiso(item.id)}
-                                                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                                        disabled={selectedSnapshotCompromisos !== 'active'}
+                                                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                                                         title="Eliminar compromiso"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -910,7 +1252,7 @@ export default function MCIPage() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {compromisos.length === 0 && (
+                                        {currentCompromisos.length === 0 && (
                                             <tr>
                                                 <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
                                                     No hay compromisos creados para esta semana. ¡Haz clic en "Agregar Compromiso" para empezar!

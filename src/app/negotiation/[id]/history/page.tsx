@@ -192,6 +192,21 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
         }
     }
 
+    const handleUpdateComment = async (id: number, val: string) => {
+        try {
+            const { error } = await supabase
+                .from('Neg_historial_precios')
+                .update({ comentarios: val })
+                .eq('id', id)
+
+            if (error) throw error
+
+            setHistory(prev => prev.map(item => item.id === id ? { ...item, comentarios: val } : item))
+        } catch (err) {
+            console.error('Error al actualizar el comentario:', err)
+        }
+    }
+
     // Effect to reload history when supplier changes
     useEffect(() => {
         // We ensure we only trigger this after the initial mount logic or on user interaction
@@ -451,8 +466,24 @@ export default function NegotiationHistoryPage({ params }: { params: Promise<{ i
                                                         {formatCurrency(item.ahorro_generado || 0)}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 max-w-[200px] truncate text-xs text-slate-500" title={(item as any).comentarios || ''}>
-                                                    {(item as any).comentarios || <span className="text-slate-300 italic">Sin comentarios</span>}
+                                                <td className="px-6 py-4 w-64 align-middle">
+                                                    <input
+                                                        type="text"
+                                                        value={item.comentarios || ''}
+                                                        onChange={(e) => {
+                                                            setHistory(prev => prev.map(h => 
+                                                                h.id === item.id ? { ...h, comentarios: e.target.value } : h
+                                                            ))
+                                                        }}
+                                                        onBlur={(e) => handleUpdateComment(item.id, e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                (e.target as HTMLInputElement).blur()
+                                                            }
+                                                        }}
+                                                        placeholder="Sin comentarios"
+                                                        className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#254153] focus:border-[#254153] bg-slate-50 focus:bg-white transition-all text-slate-700 font-medium"
+                                                    />
                                                 </td>
                                             </tr>
                                         )

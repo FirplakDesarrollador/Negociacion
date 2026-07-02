@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     X,
     Percent,
@@ -15,7 +15,7 @@ import {
     isOpen: boolean
     onClose: () => void
     products: any[]
-    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number, basePercent?: number, negotiatedPercent?: number }) => void
+    onApply: (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number, basePercent?: number, negotiatedPercent?: number, comments?: string }) => void
 }
 
 export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply }: BulkNegotiatorModalProps) {
@@ -25,6 +25,13 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
     const [consumption, setConsumption] = useState<string>('')
     const [skuConsumptions, setSkuConsumptions] = useState<Record<string, string>>({})
     const [months, setMonths] = useState<string>('')
+    const [bulkComment, setBulkComment] = useState<string>('')
+
+    useEffect(() => {
+        if (!isOpen) {
+            setBulkComment('')
+        }
+    }, [isOpen])
 
     const calculatedPercentage = parseFloat(((parseFloat(basePercent) || 0) - (parseFloat(negotiatedPercent) || 0)).toFixed(2))
 
@@ -205,8 +212,19 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                         </div>
                     </div>
 
+                    {/* Mass Comment */}
+                    <div className="space-y-1 mt-4">
+                        <label className="text-sm font-semibold text-slate-700 block mb-1">Comentario Masivo</label>
+                        <textarea
+                            value={bulkComment}
+                            onChange={(e) => setBulkComment(e.target.value)}
+                            className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#254153]/10 focus:border-[#254153] outline-none transition-all font-medium text-slate-800 text-sm h-20 resize-none"
+                            placeholder="Escribe un comentario para todos los productos..."
+                        />
+                    </div>
+
                     {/* Actions */}
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-4">
                         <button
                             onClick={onClose}
                             className="flex-1 px-4 py-3 border-2 border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 transition-colors"
@@ -229,7 +247,8 @@ export default function BulkNegotiatorModal({ isOpen, onClose, products, onApply
                                     skuConsumptions: parsedConsumptions,
                                     months: months ? parseFloat(months) : undefined,
                                     basePercent: parseFloat(basePercent) || 0,
-                                    negotiatedPercent: parseFloat(negotiatedPercent) || 0
+                                    negotiatedPercent: parseFloat(negotiatedPercent) || 0,
+                                    comments: bulkComment || undefined
                                 })
                             }}
                             className="flex-2 px-6 py-3 bg-[#254153] text-white font-bold rounded-xl hover:bg-[#1a2f3d] transition-all shadow-lg shadow-[#254153]/20"

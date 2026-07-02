@@ -139,7 +139,13 @@ export default function NegotiationPage({
                         
                         const ahorroUnitario = prevPrice - newPrice
                         const ahorroPorcentaje = prevPrice > 0 ? (ahorroUnitario / prevPrice) * 100 : 0
-                        const ahorroTotal = ahorroUnitario * cant * 12
+                        const ahorroTotal = hist.ahorro_generado !== null && hist.ahorro_generado !== undefined 
+                            ? Number(hist.ahorro_generado) 
+                            : ahorroUnitario * cant * 12
+                        
+                        const computedMonths = (ahorroUnitario * cant) > 0 
+                            ? Math.round(ahorroTotal / (ahorroUnitario * cant)) 
+                            : 12
 
                         return {
                             id: p.Id,
@@ -152,7 +158,7 @@ export default function NegotiationPage({
                             ahorro_unitario: ahorroUnitario,
                             ahorro_porcentaje: ahorroPorcentaje,
                             ahorro_total: ahorroTotal,
-                            months: 12,
+                            months: computedMonths,
                             unidad: p.Unidad_de_medida,
                             codigo_articulo: p.Codigo_Articulo,
                             porcentaje_base: hist.porcentaje_base || 0,
@@ -279,7 +285,7 @@ export default function NegotiationPage({
         calculateTotals(updatedList)
     }
 
-    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number, basePercent?: number, negotiatedPercent?: number }) => {
+    const handleApplyBulk = (settings: { percentage: number, type: 'Ahorro' | 'Avoidance', skuConsumptions: Record<string, number>, months?: number, basePercent?: number, negotiatedPercent?: number, comments?: string }) => {
         const newList = products.map(product => {
             const basePriceForCalc = product.precio_actual
             const ahorroUnitario = basePriceForCalc * (settings.percentage / 100)
@@ -305,6 +311,7 @@ export default function NegotiationPage({
                 months: numMonths,
                 porcentaje_base: settings.basePercent || 0,
                 porcentaje_negociado: settings.negotiatedPercent || 0,
+                comentarios: settings.comments !== undefined ? settings.comments : product.comentarios,
                 isDirty: true
             }
         })
