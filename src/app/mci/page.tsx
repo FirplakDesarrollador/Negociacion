@@ -984,12 +984,13 @@ export default function MCIPage() {
                                                     </select>
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
-                                                    <input
-                                                        type="text"
+                                                    <textarea
                                                         value={item.name}
                                                         onChange={(e) => handleUpdate(item.id, 'name', e.target.value)}
                                                         disabled={selectedSnapshotPred1 !== 'active'}
-                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2 py-1.5 outline-none rounded transition-all min-w-[200px] disabled:bg-transparent disabled:text-slate-500"
+                                                        title={item.name}
+                                                        rows={2}
+                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2 py-1 outline-none rounded transition-all min-w-[200px] resize-none text-xs leading-normal disabled:bg-transparent disabled:text-slate-500"
                                                     />
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
@@ -997,6 +998,7 @@ export default function MCIPage() {
                                                         value={item.dimension} 
                                                         onChange={(e) => handleUpdate(item.id, 'dimension', e.target.value)}
                                                         disabled={selectedSnapshotPred1 !== 'active'}
+                                                        title={item.dimension}
                                                         className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         {dimensiones.map(d => <option key={d} value={d}>{d}</option>)}
@@ -1007,6 +1009,7 @@ export default function MCIPage() {
                                                         value={item.objective} 
                                                         onChange={(e) => handleUpdate(item.id, 'objective', e.target.value)}
                                                         disabled={selectedSnapshotPred1 !== 'active'}
+                                                        title={item.objective}
                                                         className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white min-w-[180px] whitespace-normal disabled:bg-slate-50 disabled:text-slate-500"
                                                     >
                                                         {objetivos.map(o => <option key={o} value={o}>{o}</option>)}
