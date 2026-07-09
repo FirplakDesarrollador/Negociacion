@@ -53,6 +53,18 @@ export default function BIVisualsPage() {
     // Data
     const [history, setHistory] = useState<any[]>([])
 
+    const [ahorroEspecialReal, setAhorroEspecialReal] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('bi_ahorro_especial_real')
+            if (saved) return Number(saved)
+        }
+        return 12000000
+    })
+
+    useEffect(() => {
+        localStorage.setItem('bi_ahorro_especial_real', ahorroEspecialReal.toString())
+    }, [ahorroEspecialReal])
+
     useEffect(() => {
         loadBIData()
     }, [])
@@ -188,6 +200,7 @@ export default function BIVisualsPage() {
 
     const META_SAVING = 150000000
     const META_AVOIDANCE = 300000000
+    const META_AHORRO_ESPECIAL = 20000000
 
     const savingProgressPercent = Math.min(100, Math.max(0, (kpis.savingsValue / META_SAVING) * 100))
     const savingProgressPercentRaw = (kpis.savingsValue / META_SAVING) * 100
@@ -196,6 +209,10 @@ export default function BIVisualsPage() {
     const avoidanceProgressPercent = Math.min(100, Math.max(0, (kpis.avoidanceValue / META_AVOIDANCE) * 100))
     const avoidanceProgressPercentRaw = (kpis.avoidanceValue / META_AVOIDANCE) * 100
     const avoidanceRemaining = Math.max(0, META_AVOIDANCE - kpis.avoidanceValue)
+
+    const ahorroEspecialProgressPercent = Math.min(100, Math.max(0, (ahorroEspecialReal / META_AHORRO_ESPECIAL) * 100))
+    const ahorroEspecialProgressPercentRaw = (ahorroEspecialReal / META_AHORRO_ESPECIAL) * 100
+    const ahorroEspecialRemaining = Math.max(0, META_AHORRO_ESPECIAL - ahorroEspecialReal)
 
     const handleExportCSV = () => {
         if (filteredData.length === 0) return alert('No hay datos para exportar')
@@ -392,7 +409,7 @@ export default function BIVisualsPage() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                         {/* Goal 1: Savings */}
                         <div className="bg-white/5 rounded-2xl p-6 border border-white/10 relative overflow-hidden hover:border-emerald-500/30 hover:bg-white/10 transition-all duration-300 flex flex-col justify-between">
                             <div>
@@ -400,21 +417,25 @@ export default function BIVisualsPage() {
                                     <h3 className="font-extrabold text-slate-200 tracking-wide text-xs uppercase flex items-center gap-2">
                                         <TrendingDown className="w-4 h-4 text-emerald-400" /> META AHORRO (SAVING)
                                     </h3>
-                                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${savingProgressPercentRaw >= 100 ? 'bg-emerald-500 text-slate-900 animate-pulse' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                    <span className={`text-sm font-black px-3 py-1.5 rounded-full border ${
+                                        savingProgressPercentRaw >= 100 
+                                            ? 'bg-emerald-500 text-slate-900 border-emerald-400 animate-pulse' 
+                                            : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-sm'
+                                    }`}>
                                         {savingProgressPercentRaw >= 100 ? '✓ ALCANZADA' : `${savingProgressPercentRaw.toFixed(1)}%`}
                                     </span>
                                 </div>
                                 <div className="flex items-baseline gap-2 mb-2">
                                     <span className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
-                                        {formatCurrency(META_SAVING)}
+                                        {formatCurrency(kpis.savingsValue)}
                                     </span>
-                                    <span className="text-xs text-slate-400 font-bold uppercase">Meta Anual</span>
+                                    <span className="text-xs text-slate-400 font-bold uppercase">Llevamos</span>
                                 </div>
                                 <div className="text-xs text-slate-300 font-semibold mb-6 flex flex-wrap items-center gap-x-4 gap-y-1">
-                                    <span>Llevamos: <strong className="text-emerald-400">{formatCurrency(kpis.savingsValue)}</strong></span>
+                                    <span>Meta Anual: <strong className="text-emerald-400">{formatCurrency(META_SAVING)}</strong></span>
                                     <span className="text-slate-500">|</span>
                                     {savingRemaining > 0 ? (
-                                        <span>Falta: <strong className="text-slate-100">{formatCurrency(savingRemaining)}</strong></span>
+                                        <span>Falta: <strong className="text-rose-500">{formatCurrency(savingRemaining)}</strong></span>
                                     ) : (
                                         <span className="text-emerald-400 font-bold">¡Meta superada por {formatCurrency(Math.abs(META_SAVING - kpis.savingsValue))}!</span>
                                     )}
@@ -447,21 +468,25 @@ export default function BIVisualsPage() {
                                     <h3 className="font-extrabold text-slate-200 tracking-wide text-xs uppercase flex items-center gap-2">
                                         <ShieldCheck className="w-4 h-4 text-amber-400" /> META EVITACIÓN (AVOIDANCE)
                                     </h3>
-                                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${avoidanceProgressPercentRaw >= 100 ? 'bg-amber-500 text-slate-900 animate-pulse' : 'bg-amber-500/20 text-amber-400'}`}>
+                                    <span className={`text-sm font-black px-3 py-1.5 rounded-full border ${
+                                        avoidanceProgressPercentRaw >= 100 
+                                            ? 'bg-amber-500 text-slate-900 border-amber-400 animate-pulse' 
+                                            : 'bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-sm'
+                                    }`}>
                                         {avoidanceProgressPercentRaw >= 100 ? '✓ ALCANZADA' : `${avoidanceProgressPercentRaw.toFixed(1)}%`}
                                     </span>
                                 </div>
                                 <div className="flex items-baseline gap-2 mb-2">
                                     <span className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 to-orange-200 bg-clip-text text-transparent">
-                                        {formatCurrency(META_AVOIDANCE)}
+                                        {formatCurrency(kpis.avoidanceValue)}
                                     </span>
-                                    <span className="text-xs text-slate-400 font-bold uppercase">Meta Anual</span>
+                                    <span className="text-xs text-slate-400 font-bold uppercase">Llevamos</span>
                                 </div>
                                 <div className="text-xs text-slate-300 font-semibold mb-6 flex flex-wrap items-center gap-x-4 gap-y-1">
-                                    <span>Llevamos: <strong className="text-amber-400">{formatCurrency(kpis.avoidanceValue)}</strong></span>
+                                    <span>Meta Anual: <strong className="text-amber-400">{formatCurrency(META_AVOIDANCE)}</strong></span>
                                     <span className="text-slate-500">|</span>
                                     {avoidanceRemaining > 0 ? (
-                                        <span>Falta: <strong className="text-slate-100">{formatCurrency(avoidanceRemaining)}</strong></span>
+                                        <span>Falta: <strong className="text-rose-500">{formatCurrency(avoidanceRemaining)}</strong></span>
                                     ) : (
                                         <span className="text-amber-400 font-bold">¡Meta superada por {formatCurrency(Math.abs(META_AVOIDANCE - kpis.avoidanceValue))}!</span>
                                     )}
@@ -482,6 +507,63 @@ export default function BIVisualsPage() {
                                 <p className="text-[11px] text-slate-400 mt-3 font-medium">
                                     {avoidanceRemaining > 0 
                                         ? `Para alcanzar la meta de Avoidance nos falta el ${(100 - avoidanceProgressPercentRaw).toFixed(1)}% del total presupuestado.` 
+                                        : '¡Excelente desempeño! Se ha logrado completar la meta establecida para el periodo actual.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Goal 3: Ahorro Especial */}
+                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 relative overflow-hidden hover:border-purple-500/30 hover:bg-white/10 transition-all duration-300 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-extrabold text-slate-200 tracking-wide text-xs uppercase flex items-center gap-2">
+                                        <TrendingDown className="w-4 h-4 text-purple-400" /> META AHORRO ESPECIAL
+                                    </h3>
+                                    <span className={`text-sm font-black px-3 py-1.5 rounded-full border ${
+                                        ahorroEspecialProgressPercentRaw >= 100 
+                                            ? 'bg-purple-500 text-slate-900 border-purple-400 animate-pulse' 
+                                            : 'bg-purple-500/20 text-purple-400 border-purple-500/30 shadow-sm'
+                                    }`}>
+                                        {ahorroEspecialProgressPercentRaw >= 100 ? '✓ ALCANZADA' : `${ahorroEspecialProgressPercentRaw.toFixed(1)}%`}
+                                    </span>
+                                </div>
+                                <div className="flex items-baseline gap-2 mb-2">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-3xl font-extrabold text-purple-400">$</span>
+                                        <input
+                                            type="number"
+                                            value={ahorroEspecialReal}
+                                            onChange={(e) => setAhorroEspecialReal(Math.max(0, Number(e.target.value)))}
+                                            className="bg-transparent border-b border-purple-500/30 focus:border-purple-500 text-3xl font-extrabold text-white tracking-tight w-48 outline-none focus:ring-0 py-0"
+                                        />
+                                    </div>
+                                    <span className="text-xs text-slate-400 font-bold uppercase">Llevamos</span>
+                                </div>
+                                <div className="text-xs text-slate-300 font-semibold mb-6 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                    <span>Meta Anual: <strong className="text-purple-400">{formatCurrency(META_AHORRO_ESPECIAL)}</strong></span>
+                                    <span className="text-slate-500">|</span>
+                                    {ahorroEspecialRemaining > 0 ? (
+                                        <span>Falta: <strong className="text-rose-500">{formatCurrency(ahorroEspecialRemaining)}</strong></span>
+                                    ) : (
+                                        <span className="text-purple-400 font-bold">¡Meta superada por {formatCurrency(Math.abs(META_AHORRO_ESPECIAL - ahorroEspecialReal))}!</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-2">
+                                    <span>Progreso</span>
+                                    <span>{ahorroEspecialProgressPercentRaw.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full transition-all duration-1000 ease-out" 
+                                        style={{ width: `${ahorroEspecialProgressPercent}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-3 font-medium">
+                                    {ahorroEspecialRemaining > 0 
+                                        ? `Para alcanzar la meta de Ahorro Especial nos falta el ${(100 - ahorroEspecialProgressPercentRaw).toFixed(1)}% del total presupuestado.` 
                                         : '¡Excelente desempeño! Se ha logrado completar la meta establecida para el periodo actual.'}
                                 </p>
                             </div>
