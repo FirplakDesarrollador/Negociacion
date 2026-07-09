@@ -56,10 +56,10 @@ const baseInitiatives = [
 ]
 
 const baseCotizaciones = [
-    { id: 1, fecha: '2026-02-12', responsable: 'Nalle', tipo: 'Outbound', descripcion: 'Cotización inicial de cajas de cartón' },
-    { id: 2, fecha: '2026-02-19', responsable: 'Alejo', tipo: 'Iniciativa propia', descripcion: 'Estudio de costos de resinas' },
-    { id: 3, fecha: '2026-02-26', responsable: 'Isabel', tipo: 'Outbound', descripcion: 'Cotización de PVC Foamboard' },
-    { id: 4, fecha: '2026-03-05', responsable: 'Cata', tipo: 'Iniciativa propia', descripcion: 'Evaluación de tarifas de fletes' }
+    { id: 1, fecha: '2026-02-12', responsable: 'Nalle', tipo: 'Outbound', descripcion: 'Cotización inicial de cajas de cartón', estado: 'Analizada cerrada' },
+    { id: 2, fecha: '2026-02-19', responsable: 'Alejo', tipo: 'Inbound', descripcion: 'Estudio de costos de resinas', estado: 'Cotizacion recibida' },
+    { id: 3, fecha: '2026-02-26', responsable: 'Isabel', tipo: 'Outbound', descripcion: 'Cotización de PVC Foamboard', estado: 'Analizada cerrada' },
+    { id: 4, fecha: '2026-03-05', responsable: 'Cata', tipo: 'Inbound', descripcion: 'Evaluación de tarifas de fletes', estado: 'pendiente' }
 ]
 
 interface Initiative {
@@ -80,6 +80,7 @@ interface Cotizacion {
     responsable: string
     tipo: string
     descripcion: string
+    estado: string
 }
 
 interface Compromiso {
@@ -131,13 +132,18 @@ export default function MCIPage() {
                 try {
                     const parsed = JSON.parse(saved)
                     if (Array.isArray(parsed)) {
-                        return parsed.map((item: any) => ({
-                            id: item.id,
-                            fecha: item.fecha || item.startDate || '2026-02-12',
-                            responsable: item.responsable || 'Nalle',
-                            tipo: item.tipo || 'Outbound',
-                            descripcion: item.descripcion || item.name || 'Cotización de proveedor'
-                        }))
+                        return parsed.map((item: any) => {
+                            const oldState = item.state
+                            const defaultEstado = (oldState === 'cerrada ganada' || oldState === 'cerrada perdida') ? 'Analizada cerrada' : 'Cotizacion recibida'
+                            return {
+                                id: item.id,
+                                fecha: item.fecha || item.startDate || '2026-02-12',
+                                responsable: item.responsable || 'Nalle',
+                                tipo: (item.tipo === 'Iniciativa propia' ? 'Inbound' : item.tipo) || 'Outbound',
+                                descripcion: item.descripcion || item.name || 'Cotización de proveedor',
+                                estado: item.estado || defaultEstado
+                            }
+                        })
                     }
                 } catch (e) { console.error(e) }
             }
@@ -205,13 +211,18 @@ export default function MCIPage() {
                     if (Array.isArray(parsed)) {
                         return parsed.map((snap: any) => ({
                             ...snap,
-                            items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
-                                id: item.id,
-                                fecha: item.fecha || item.startDate || snap.date || '2026-02-12',
-                                responsable: item.responsable || 'Nalle',
-                                tipo: item.tipo || 'Outbound',
-                                descripcion: item.descripcion || item.name || 'Cotización de proveedor'
-                            })) : []
+                            items: Array.isArray(snap.items) ? snap.items.map((item: any) => {
+                                const oldState = item.state
+                                const defaultEstado = (oldState === 'cerrada ganada' || oldState === 'cerrada perdida') ? 'Analizada cerrada' : 'Cotizacion recibida'
+                                return {
+                                    id: item.id,
+                                    fecha: item.fecha || item.startDate || snap.date || '2026-02-12',
+                                    responsable: item.responsable || 'Nalle',
+                                    tipo: (item.tipo === 'Iniciativa propia' ? 'Inbound' : item.tipo) || 'Outbound',
+                                    descripcion: item.descripcion || item.name || 'Cotización de proveedor',
+                                    estado: item.estado || defaultEstado
+                                }
+                            }) : []
                         }))
                     }
                 } catch (e) { console.error(e) }
@@ -345,10 +356,18 @@ export default function MCIPage() {
     const cotizacionesStats = useMemo(() => {
         const selectedDate = selectedSnapshotPred2 === 'active' ? reviewDatePred2 : selectedSnapshotPred2
         const target = getTargetQuotations(selectedDate)
-        // Count cotizaciones whose date is less than or equal to selectedDate
-        const realCount = currentCotizaciones.filter((c: Cotizacion) => c.fecha <= selectedDate).length
+        // Count cotizaciones whose date is less than or equal to selectedDate AND state is 'Analizada cerrada'
+        const realCount = currentCotizaciones.filter((c: Cotizacion) => c.fecha <= selectedDate && c.estado === 'Analizada cerrada').length
         const status = realCount >= target ? 'Cumpliendo' : 'No cumpliendo'
-        return { target, real: realCount, status }
+
+        // Calculate Outbound / Inbound stats for all cotizaciones in view
+        const total = currentCotizaciones.length
+        const outbound = currentCotizaciones.filter((c: Cotizacion) => c.tipo === 'Outbound').length
+        const inbound = currentCotizaciones.filter((c: Cotizacion) => c.tipo === 'Inbound').length
+        const outboundPct = total > 0 ? Math.round((outbound / total) * 100) : 0
+        const inboundPct = total > 0 ? Math.round((inbound / total) * 100) : 0
+
+        return { target, real: realCount, status, total, outbound, inbound, outboundPct, inboundPct }
     }, [currentCotizaciones, selectedSnapshotPred2, reviewDatePred2])
 
     const currentCompromisos = useMemo(() => {
@@ -414,7 +433,8 @@ export default function MCIPage() {
             fecha: defaultDate,
             responsable: 'Nalle',
             tipo: 'Outbound',
-            descripcion: 'Nueva cotización'
+            descripcion: 'Nueva cotización',
+            estado: 'pendiente'
         }
         setCotizaciones(prev => [newItem, ...prev])
     }
@@ -784,10 +804,10 @@ export default function MCIPage() {
 
                 {/* Cotizaciones Calculator / Summary Panel */}
                 {activeTab === 'pred2' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-6 gap-4 mb-6">
                         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha de Corte</span>
-                            <span className="text-lg font-black text-[#254153] mt-1">
+                            <span className="text-sm font-black text-[#254153] mt-1 truncate">
                                 {selectedSnapshotPred2 === 'active' ? reviewDatePred2 : selectedSnapshotPred2}
                             </span>
                         </div>
@@ -805,16 +825,28 @@ export default function MCIPage() {
                                 : 'bg-rose-600 border-rose-700'
                         }`}>
                             <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Estado de Medida</span>
-                            <span className="text-xl font-black mt-1 flex items-center gap-1.5">
+                            <span className="text-base font-black mt-1 flex items-center gap-1">
                                 {cotizacionesStats.status === 'Cumpliendo' ? (
                                     <>
-                                        <CheckCircle2 className="w-5 h-5" /> Cumpliendo
+                                        <CheckCircle2 className="w-4 h-4" /> Cumpliendo
                                     </>
                                 ) : (
                                     <>
-                                        <AlertCircle className="w-5 h-5" /> No Cumpliendo
+                                        <AlertCircle className="w-4 h-4" /> No Cumpliendo
                                     </>
                                 )}
+                            </span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-blue-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Outbound</span>
+                            <span className="text-lg font-black text-blue-600 mt-1">
+                                {cotizacionesStats.outbound} <span className="text-xs font-semibold text-slate-400">({cotizacionesStats.outboundPct}%)</span>
+                            </span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-purple-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Inbound</span>
+                            <span className="text-lg font-black text-purple-600 mt-1">
+                                {cotizacionesStats.inbound} <span className="text-xs font-semibold text-slate-400">({cotizacionesStats.inboundPct}%)</span>
                             </span>
                         </div>
                     </div>
@@ -1144,6 +1176,7 @@ export default function MCIPage() {
                                             <CotTh label="Responsable" sortKey="responsable" width="w-48" />
                                             <CotTh label="Tipo/Origen" sortKey="tipo" width="w-48" />
                                             <CotTh label="Descripción" sortKey="descripcion" width="min-w-[300px]" />
+                                            <CotTh label="Estado" sortKey="estado" width="w-48" />
                                             <th className="px-3 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
@@ -1182,7 +1215,7 @@ export default function MCIPage() {
                                                         className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:border-[#254153]"
                                                     >
                                                         <option value="Outbound">Outbound</option>
-                                                        <option value="Iniciativa propia">Iniciativa propia</option>
+                                                        <option value="Inbound">Inbound</option>
                                                     </select>
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
@@ -1194,6 +1227,19 @@ export default function MCIPage() {
                                                         rows={2}
                                                         className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2 py-1 outline-none rounded transition-all min-w-[300px] resize-none text-xs leading-normal disabled:bg-transparent disabled:text-slate-500"
                                                     />
+                                                </td>
+                                                <td className="px-3 py-4 align-middle w-48">
+                                                    <select 
+                                                        value={item.estado} 
+                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'estado', e.target.value)}
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        title={item.estado}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:border-[#254153]"
+                                                    >
+                                                        <option value="Cotizacion recibida">Cotizacion recibida</option>
+                                                        <option value="Analizada cerrada">Analizada cerrada</option>
+                                                        <option value="pendiente">pendiente</option>
+                                                    </select>
                                                 </td>
                                                 <td className="px-3 py-4 text-center align-middle">
                                                     <button
