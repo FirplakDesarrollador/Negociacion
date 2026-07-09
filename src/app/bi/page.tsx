@@ -186,6 +186,17 @@ export default function BIVisualsPage() {
         }).format(value)
     }
 
+    const META_SAVING = 150000000
+    const META_AVOIDANCE = 300000000
+
+    const savingProgressPercent = Math.min(100, Math.max(0, (kpis.savingsValue / META_SAVING) * 100))
+    const savingProgressPercentRaw = (kpis.savingsValue / META_SAVING) * 100
+    const savingRemaining = Math.max(0, META_SAVING - kpis.savingsValue)
+
+    const avoidanceProgressPercent = Math.min(100, Math.max(0, (kpis.avoidanceValue / META_AVOIDANCE) * 100))
+    const avoidanceProgressPercentRaw = (kpis.avoidanceValue / META_AVOIDANCE) * 100
+    const avoidanceRemaining = Math.max(0, META_AVOIDANCE - kpis.avoidanceValue)
+
     const handleExportCSV = () => {
         if (filteredData.length === 0) return alert('No hay datos para exportar')
 
@@ -360,6 +371,119 @@ export default function BIVisualsPage() {
                             <Filter className="w-4 h-4" />
                             <div className="text-xs">
                                 <span className="font-bold">{filteredData.length}</span> registros
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2026 Strategic Goals Dashboard */}
+                <div className="mb-8 bg-gradient-to-br from-slate-900 via-[#1b2b35] to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6 mb-6">
+                        <div>
+                            <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-full">Metas Estratégicas 2026</span>
+                            <h2 className="text-2xl md:text-3xl font-black mt-2 tracking-tight">Monitoreo de Objetivos Anuales</h2>
+                            <p className="text-slate-400 text-sm mt-1 font-medium">Control de avance financiero en tiempo real de compras y negociaciones</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="text-[10px] uppercase font-bold text-slate-400 bg-white/5 px-3 py-2 rounded-lg border border-white/5">Periodo: Ene - Dic 2026</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+                        {/* Goal 1: Savings */}
+                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 relative overflow-hidden hover:border-emerald-500/30 hover:bg-white/10 transition-all duration-300 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-extrabold text-slate-200 tracking-wide text-xs uppercase flex items-center gap-2">
+                                        <TrendingDown className="w-4 h-4 text-emerald-400" /> META AHORRO (SAVING)
+                                    </h3>
+                                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${savingProgressPercentRaw >= 100 ? 'bg-emerald-500 text-slate-900 animate-pulse' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                        {savingProgressPercentRaw >= 100 ? '✓ ALCANZADA' : `${savingProgressPercentRaw.toFixed(1)}%`}
+                                    </span>
+                                </div>
+                                <div className="flex items-baseline gap-2 mb-2">
+                                    <span className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-200 bg-clip-text text-transparent">
+                                        {formatCurrency(META_SAVING)}
+                                    </span>
+                                    <span className="text-xs text-slate-400 font-bold uppercase">Meta Anual</span>
+                                </div>
+                                <div className="text-xs text-slate-300 font-semibold mb-6 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                    <span>Llevamos: <strong className="text-emerald-400">{formatCurrency(kpis.savingsValue)}</strong></span>
+                                    <span className="text-slate-500">|</span>
+                                    {savingRemaining > 0 ? (
+                                        <span>Falta: <strong className="text-slate-100">{formatCurrency(savingRemaining)}</strong></span>
+                                    ) : (
+                                        <span className="text-emerald-400 font-bold">¡Meta superada por {formatCurrency(Math.abs(META_SAVING - kpis.savingsValue))}!</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-2">
+                                    <span>Progreso</span>
+                                    <span>{savingProgressPercentRaw.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-1000 ease-out" 
+                                        style={{ width: `${savingProgressPercent}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-3 font-medium">
+                                    {savingRemaining > 0 
+                                        ? `Para alcanzar la meta de Ahorro nos falta el ${(100 - savingProgressPercentRaw).toFixed(1)}% del total presupuestado.` 
+                                        : '¡Excelente desempeño! Se ha logrado completar la meta establecida para el periodo actual.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Goal 2: Avoidance */}
+                        <div className="bg-white/5 rounded-2xl p-6 border border-white/10 relative overflow-hidden hover:border-amber-500/30 hover:bg-white/10 transition-all duration-300 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-extrabold text-slate-200 tracking-wide text-xs uppercase flex items-center gap-2">
+                                        <ShieldCheck className="w-4 h-4 text-amber-400" /> META EVITACIÓN (AVOIDANCE)
+                                    </h3>
+                                    <span className={`text-xs font-black px-2.5 py-1 rounded-full ${avoidanceProgressPercentRaw >= 100 ? 'bg-amber-500 text-slate-900 animate-pulse' : 'bg-amber-500/20 text-amber-400'}`}>
+                                        {avoidanceProgressPercentRaw >= 100 ? '✓ ALCANZADA' : `${avoidanceProgressPercentRaw.toFixed(1)}%`}
+                                    </span>
+                                </div>
+                                <div className="flex items-baseline gap-2 mb-2">
+                                    <span className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-amber-400 to-orange-200 bg-clip-text text-transparent">
+                                        {formatCurrency(META_AVOIDANCE)}
+                                    </span>
+                                    <span className="text-xs text-slate-400 font-bold uppercase">Meta Anual</span>
+                                </div>
+                                <div className="text-xs text-slate-300 font-semibold mb-6 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                    <span>Llevamos: <strong className="text-amber-400">{formatCurrency(kpis.avoidanceValue)}</strong></span>
+                                    <span className="text-slate-500">|</span>
+                                    {avoidanceRemaining > 0 ? (
+                                        <span>Falta: <strong className="text-slate-100">{formatCurrency(avoidanceRemaining)}</strong></span>
+                                    ) : (
+                                        <span className="text-amber-400 font-bold">¡Meta superada por {formatCurrency(Math.abs(META_AVOIDANCE - kpis.avoidanceValue))}!</span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div className="flex items-center justify-between text-xs text-slate-400 font-bold mb-2">
+                                    <span>Progreso</span>
+                                    <span>{avoidanceProgressPercentRaw.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/5 p-0.5">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-amber-500 to-orange-400 rounded-full transition-all duration-1000 ease-out" 
+                                        style={{ width: `${avoidanceProgressPercent}%` }}
+                                    ></div>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-3 font-medium">
+                                    {avoidanceRemaining > 0 
+                                        ? `Para alcanzar la meta de Avoidance nos falta el ${(100 - avoidanceProgressPercentRaw).toFixed(1)}% del total presupuestado.` 
+                                        : '¡Excelente desempeño! Se ha logrado completar la meta establecida para el periodo actual.'}
+                                </p>
                             </div>
                         </div>
                     </div>

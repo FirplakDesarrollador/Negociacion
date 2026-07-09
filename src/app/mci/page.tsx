@@ -23,7 +23,7 @@ const objetivos = [
     'Torbellino contigencia abastecimiento'
 ]
 
-const dimensiones = ['Financiera', 'Operativa', 'Estratégica', 'Riesgo', 'Calidad']
+const dimensiones = ['Financiera', 'Costo', 'Estratégica', 'Riesgo', 'Calidad']
 
 const states = [
     'Sin iniciar',
@@ -158,14 +158,22 @@ export default function MCIPage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('mci_initiatives')
             if (saved) {
-                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+                try {
+                    const parsed = JSON.parse(saved)
+                    if (Array.isArray(parsed)) {
+                        return parsed.map((item: any) => ({
+                            ...item,
+                            dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                        }))
+                    }
+                } catch (e) { console.error(e) }
             }
         }
         const today = new Date().toISOString().split('T')[0]
         return baseInitiatives.map((item, index) => ({
             ...item,
             state: 'Sin iniciar',
-            dimension: dimensiones[index % dimensiones.length],
+            dimension: dimensiones[index % dimensiones.length] === 'Operativa' ? 'Costo' : dimensiones[index % dimensiones.length],
             objective: objetivos[index % objetivos.length],
             startDate: today,
             endDate: ''
@@ -177,14 +185,22 @@ export default function MCIPage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('mci_cotizaciones')
             if (saved) {
-                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+                try {
+                    const parsed = JSON.parse(saved)
+                    if (Array.isArray(parsed)) {
+                        return parsed.map((item: any) => ({
+                            ...item,
+                            dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                        }))
+                    }
+                } catch (e) { console.error(e) }
             }
         }
         const today = new Date().toISOString().split('T')[0]
         return baseCotizaciones.map((item, index) => ({
             ...item,
             state: 'Sin iniciar',
-            dimension: dimensiones[index % dimensiones.length],
+            dimension: dimensiones[index % dimensiones.length] === 'Operativa' ? 'Costo' : dimensiones[index % dimensiones.length],
             objective: objetivos[index % objetivos.length],
             startDate: today,
             endDate: ''
@@ -224,7 +240,18 @@ export default function MCIPage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('mci_initiatives_snapshots')
             if (saved) {
-                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+                try {
+                    const parsed = JSON.parse(saved)
+                    if (Array.isArray(parsed)) {
+                        return parsed.map((snap: any) => ({
+                            ...snap,
+                            items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
+                                ...item,
+                                dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                            })) : []
+                        }))
+                    }
+                } catch (e) { console.error(e) }
             }
         }
         return []
@@ -234,7 +261,18 @@ export default function MCIPage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('mci_cotizaciones_snapshots')
             if (saved) {
-                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+                try {
+                    const parsed = JSON.parse(saved)
+                    if (Array.isArray(parsed)) {
+                        return parsed.map((snap: any) => ({
+                            ...snap,
+                            items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
+                                ...item,
+                                dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                            })) : []
+                        }))
+                    }
+                } catch (e) { console.error(e) }
             }
         }
         return []
