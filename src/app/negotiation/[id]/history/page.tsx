@@ -25,6 +25,7 @@ interface HistoryItem {
     negociacion_id?: string
     porcentaje_base?: number
     porcentaje_negociado?: number
+    comentarios?: string
     Neg_productos: {
         descripcion: string
         tipo: string

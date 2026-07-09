@@ -1188,7 +1188,7 @@ export default function MCIPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {currentCompromisos.map((item) => (
+                                        {currentCompromisos.map((item: Compromiso) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                                 <td className="px-6 py-4 text-center align-middle">
                                                     <select
