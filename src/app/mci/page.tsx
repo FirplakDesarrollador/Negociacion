@@ -128,6 +128,7 @@ interface Initiative {
     objective: string
     startDate: string
     endDate: string
+    moneyImpact?: number
 }
 
 interface Cotizacion {
@@ -163,7 +164,8 @@ export default function MCIPage() {
                     if (Array.isArray(parsed)) {
                         return parsed.map((item: any) => ({
                             ...item,
-                            dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                            dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension,
+                            moneyImpact: item.moneyImpact || 0
                         }))
                     }
                 } catch (e) { console.error(e) }
@@ -176,7 +178,8 @@ export default function MCIPage() {
             dimension: dimensiones[index % dimensiones.length] === 'Operativa' ? 'Costo' : dimensiones[index % dimensiones.length],
             objective: objetivos[index % objetivos.length],
             startDate: today,
-            endDate: ''
+            endDate: '',
+            moneyImpact: 0
         }))
     })
 
@@ -247,7 +250,8 @@ export default function MCIPage() {
                             ...snap,
                             items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
                                 ...item,
-                                dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                                dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension,
+                                moneyImpact: item.moneyImpact || 0
                             })) : []
                         }))
                     }
@@ -376,6 +380,17 @@ export default function MCIPage() {
         return snap ? snap.items : []
     }, [initiatives, initiativesSnapshots, selectedSnapshotPred1])
 
+    const initiativeStats = useMemo(() => {
+        const total = currentInitiatives.length
+        const p1 = currentInitiatives.filter((i: Initiative) => Number(i.priority) === 1).length
+        const p2 = currentInitiatives.filter((i: Initiative) => Number(i.priority) === 2).length
+        const p3 = currentInitiatives.filter((i: Initiative) => Number(i.priority) === 3).length
+        const totalMoney = currentInitiatives.reduce((acc: number, curr: Initiative) => acc + (curr.moneyImpact || 0), 0)
+
+        return { total, p1, p2, p3, totalMoney }
+    }, [currentInitiatives])
+
+
     const currentCotizaciones = useMemo(() => {
         if (selectedSnapshotPred2 === 'active') return cotizaciones
         const snap = cotizacionesSnapshots.find(s => s.date === selectedSnapshotPred2)
@@ -396,7 +411,7 @@ export default function MCIPage() {
     const [cotSortConfig, setCotSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
     const [cotFilters, setCotFilters] = useState<Record<string, string>>({})
 
-    const handleUpdate = (id: number, field: string, value: string) => {
+    const handleUpdate = (id: number, field: string, value: any) => {
         setInitiatives(prev => prev.map(item => {
             if (item.id !== id) return item;
             const updated = { ...item, [field]: value };
@@ -405,6 +420,29 @@ export default function MCIPage() {
             }
             return updated;
         }))
+    }
+
+    const handleAddInitiative = () => {
+        const today = new Date().toISOString().split('T')[0]
+        const newId = initiatives.length > 0 ? Math.max(...initiatives.map(i => i.id)) + 1 : 1
+        const newItem = {
+            id: newId,
+            priority: 1,
+            name: 'Nueva Iniciativa',
+            state: 'Sin iniciar',
+            dimension: dimensiones[0],
+            objective: objetivos[0],
+            startDate: today,
+            endDate: '',
+            moneyImpact: 0
+        }
+        setInitiatives(prev => [newItem, ...prev])
+    }
+
+    const handleDeleteInitiative = (id: number) => {
+        if (confirm('¿Estás seguro de eliminar esta iniciativa?')) {
+            setInitiatives(prev => prev.filter(i => i.id !== id))
+        }
     }
 
     const handleUpdateCotizacion = (id: number, field: string, value: string) => {
@@ -538,6 +576,10 @@ export default function MCIPage() {
         }
         return result;
     }, [currentInitiatives, sortConfig, filters]);
+
+    const totalMoneyImpact = useMemo(() => {
+        return filteredAndSortedData.reduce((acc: number, curr: Initiative) => acc + (curr.moneyImpact || 0), 0)
+    }, [filteredAndSortedData])
 
     const handleCotSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -765,6 +807,34 @@ export default function MCIPage() {
                     </button>
                 </div>
 
+                {/* Initiatives Calculator / Summary Panel */}
+                {activeTab === 'pred1' && (
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Iniciativas</span>
+                            <span className="text-2xl font-black text-[#254153] mt-1">{initiativeStats.total}</span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-rose-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Prioridad 1</span>
+                            <span className="text-2xl font-black text-rose-600 mt-1">{initiativeStats.p1}</span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-amber-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Prioridad 2</span>
+                            <span className="text-2xl font-black text-amber-600 mt-1">{initiativeStats.p2}</span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-emerald-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Prioridad 3</span>
+                            <span className="text-2xl font-black text-emerald-600 mt-1">{initiativeStats.p3}</span>
+                        </div>
+                        <div className="bg-[#254153] rounded-xl p-4 border border-[#1c3240] shadow-sm flex flex-col justify-center text-white col-span-2 md:col-span-1">
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Impacto Total ($)</span>
+                            <span className="text-lg font-black text-emerald-400 mt-1 truncate">
+                                {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(initiativeStats.totalMoney)}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Tab Content */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
                     {/* PREDICTIVA 1 (DESARROLLO DE INICIATIVAS) */}
@@ -813,6 +883,12 @@ export default function MCIPage() {
                                             >
                                                 Guardar Foto
                                             </button>
+                                            <button
+                                                onClick={handleAddInitiative}
+                                                className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" /> Agregar Iniciativa
+                                            </button>
                                         </div>
                                     ) : (
                                         <button
@@ -848,6 +924,28 @@ export default function MCIPage() {
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
                                         <tr className="bg-white border-b border-slate-100">
+                                            {/* Nueva columna de Impacto en dinero */}
+                                            <th className="px-3 py-4 align-top w-40">
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-100 text-center truncate" title="Total Impacto">
+                                                        {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalMoneyImpact)}
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => handleSort('moneyImpact')} 
+                                                        className="flex items-center gap-1 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs tracking-wider text-left"
+                                                    >
+                                                        Impacto ($)
+                                                        <ArrowUpDown className="w-3 h-3 opacity-50" />
+                                                    </button>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Filtrar..." 
+                                                        value={filters['moneyImpact'] || ''}
+                                                        onChange={(e) => handleFilterChange('moneyImpact', e.target.value)}
+                                                        className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#254153]/10 bg-slate-50 focus:bg-white transition-all"
+                                                    />
+                                                </div>
+                                            </th>
                                             <Th label="Prioridad" sortKey="priority" width="w-24" />
                                             <Th label="Iniciativa" sortKey="name" width="min-w-[200px]" />
                                             <Th label="Dimensión" sortKey="dimension" />
@@ -856,18 +954,43 @@ export default function MCIPage() {
                                             <Th label="Fecha Fin" sortKey="endDate" />
                                             <Th label="Duración (días)" sortKey="duration" />
                                             <Th label="Estado" sortKey="state" width="w-48" />
+                                            <th className="px-3 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {filteredAndSortedData.map((item) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                                                {/* Celda editable para Impacto en dinero */}
+                                                <td className="px-3 py-4 align-middle w-40">
+                                                    <input 
+                                                        type="number" 
+                                                        placeholder="0"
+                                                        value={item.moneyImpact || ''} 
+                                                        onChange={(e) => handleUpdate(item.id, 'moneyImpact', e.target.value === '' ? 0 : Number(e.target.value))}
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className="w-full text-xs font-semibold px-2.5 py-1.5 rounded border border-slate-200 bg-white text-right disabled:bg-slate-50 focus:outline-none focus:border-[#254153] disabled:text-slate-500"
+                                                    />
+                                                </td>
                                                 <td className="px-3 py-4 text-center align-middle">
-                                                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold border ${getPriorityColor(item.priority)}`}>
-                                                        {item.priority}
-                                                    </span>
+                                                    <select
+                                                        value={item.priority}
+                                                        onChange={(e) => handleUpdate(item.id, 'priority', Number(e.target.value))}
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className={`inline-flex items-center justify-center w-12 h-8 rounded text-sm font-bold border focus:outline-none focus:ring-1 focus:ring-[#254153] disabled:opacity-80 disabled:cursor-not-allowed ${getPriorityColor(Number(item.priority))}`}
+                                                    >
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                    </select>
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
-                                                    <span className="font-semibold text-slate-700 whitespace-normal block min-w-[200px]">{item.name}</span>
+                                                    <input
+                                                        type="text"
+                                                        value={item.name}
+                                                        onChange={(e) => handleUpdate(item.id, 'name', e.target.value)}
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2 py-1.5 outline-none rounded transition-all min-w-[200px] disabled:bg-transparent disabled:text-slate-500"
+                                                    />
                                                 </td>
                                                 <td className="px-3 py-4 align-middle">
                                                     <select 
@@ -923,6 +1046,16 @@ export default function MCIPage() {
                                                             <option key={s} value={s}>{s}</option>
                                                         ))}
                                                     </select>
+                                                </td>
+                                                <td className="px-3 py-4 text-center align-middle">
+                                                    <button
+                                                        onClick={() => handleDeleteInitiative(item.id)}
+                                                        disabled={selectedSnapshotPred1 !== 'active'}
+                                                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                                                        title="Eliminar iniciativa"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
