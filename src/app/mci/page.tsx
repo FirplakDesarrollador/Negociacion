@@ -56,67 +56,10 @@ const baseInitiatives = [
 ]
 
 const baseCotizaciones = [
-    { id: 1, priority: 2, name: 'Cartan' },
-    { id: 2, priority: 2, name: 'Kartonar' },
-    { id: 3, priority: 1, name: 'Papelsa' },
-    { id: 4, priority: 1, name: 'Indugevi' },
-    { id: 5, priority: 1, name: 'Mediaprofili' },
-    { id: 6, priority: 1, name: 'Metalisteria' },
-    { id: 7, priority: 2, name: 'Forja y diseño' },
-    { id: 8, priority: 1, name: 'Taller Reiven' },
-    { id: 9, priority: 1, name: 'Mandala Metal' },
-    { id: 10, priority: 1, name: 'Bosquema' },
-    { id: 11, priority: 1, name: 'Muebles y madera la teca' },
-    { id: 12, priority: 1, name: 'Manijas' },
-    { id: 13, priority: 1, name: 'PVC Foamboard' },
-    { id: 14, priority: 1, name: 'PVC Foamboard' },
-    { id: 15, priority: 1, name: 'PVC Foamboard' },
-    { id: 16, priority: 1, name: 'PVC Foamboard' },
-    { id: 17, priority: 1, name: 'enteca' },
-    { id: 18, priority: 1, name: 'Cajas y Empaques' },
-    { id: 19, priority: 1, name: 'CajasPrint' },
-    { id: 20, priority: 1, name: 'Mademor' },
-    { id: 21, priority: 1, name: 'Unitexco' },
-    { id: 22, priority: 1, name: 'Indugevi' },
-    { id: 23, priority: 1, name: 'Sinu wood company' },
-    { id: 24, priority: 1, name: 'Fletes' },
-    { id: 25, priority: 1, name: 'Alea' },
-    { id: 26, priority: 1, name: 'Industrias plastcas GR' },
-    { id: 27, priority: 1, name: 'Flowchem' },
-    { id: 28, priority: 1, name: 'Metalarias' },
-    { id: 29, priority: 1, name: 'Maccana del Vecchio' },
-    { id: 30, priority: 1, name: 'Hierro y Nogal' },
-    { id: 31, priority: 1, name: 'Central estibas y huacales' },
-    { id: 32, priority: 1, name: 'Madera y complemetos' },
-    { id: 33, priority: 1, name: 'estibas y hucales metroantioquia' },
-    { id: 34, priority: 1, name: 'Corbox (proveedor al frente de firplak)' },
-    { id: 35, priority: 1, name: 'Serrano Gomez pino amarillo decks' },
-    { id: 36, priority: 1, name: 'Sumitomo' },
-    { id: 37, priority: 1, name: 'DTC' },
-    { id: 38, priority: 1, name: 'Meaton' },
-    { id: 39, priority: 1, name: 'Maxave' },
-    { id: 40, priority: 1, name: 'Zuncho (GLOBAL SINTETICS)' },
-    { id: 41, priority: 1, name: 'Carpas antioquia' },
-    { id: 42, priority: 1, name: 'Sonoco' },
-    { id: 43, priority: 1, name: 'United negociacion de peroxido mejor preci' },
-    { id: 44, priority: 1, name: 'excala' },
-    { id: 45, priority: 1, name: 'texcomercial' },
-    { id: 46, priority: 1, name: 'Central de maderas' },
-    { id: 47, priority: 1, name: 'Zuncho impar' },
-    { id: 48, priority: 1, name: 'Stech' },
-    { id: 49, priority: 1, name: 'Cinta' },
-    { id: 50, priority: 1, name: 'Pelicula protector' },
-    { id: 51, priority: 1, name: 'canto 2mm?' },
-    { id: 52, priority: 1, name: 'strech solucione embalaje' },
-    { id: 53, priority: 1, name: 'Strech burbuempaques interinsumos' },
-    { id: 54, priority: 1, name: 'DISTRIBUIDORA SURTIR' },
-    { id: 55, priority: 1, name: 'TUBOS Y EMPAQUES' },
-    { id: 56, priority: 1, name: 'W A EMPAQUES' },
-    { id: 57, priority: 1, name: 'Canastilla llaves, pop up desague bañera' },
-    { id: 58, priority: 1, name: 'Poliplas' },
-    { id: 59, priority: 1, name: 'interinsumos' },
-    { id: 60, priority: 1, name: 'soco' },
-    { id: 61, priority: 1, name: 'solcintas' }
+    { id: 1, fecha: '2026-02-12', responsable: 'Nalle', tipo: 'Outbound', descripcion: 'Cotización inicial de cajas de cartón' },
+    { id: 2, fecha: '2026-02-19', responsable: 'Alejo', tipo: 'Iniciativa propia', descripcion: 'Estudio de costos de resinas' },
+    { id: 3, fecha: '2026-02-26', responsable: 'Isabel', tipo: 'Outbound', descripcion: 'Cotización de PVC Foamboard' },
+    { id: 4, fecha: '2026-03-05', responsable: 'Cata', tipo: 'Iniciativa propia', descripcion: 'Evaluación de tarifas de fletes' }
 ]
 
 interface Initiative {
@@ -133,13 +76,10 @@ interface Initiative {
 
 interface Cotizacion {
     id: number
-    priority: number
-    name: string
-    state: string
-    dimension: string
-    objective: string
-    startDate: string
-    endDate: string
+    fecha: string
+    responsable: string
+    tipo: string
+    descripcion: string
 }
 
 interface Compromiso {
@@ -192,22 +132,17 @@ export default function MCIPage() {
                     const parsed = JSON.parse(saved)
                     if (Array.isArray(parsed)) {
                         return parsed.map((item: any) => ({
-                            ...item,
-                            dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                            id: item.id,
+                            fecha: item.fecha || item.startDate || '2026-02-12',
+                            responsable: item.responsable || 'Nalle',
+                            tipo: item.tipo || 'Outbound',
+                            descripcion: item.descripcion || item.name || 'Cotización de proveedor'
                         }))
                     }
                 } catch (e) { console.error(e) }
             }
         }
-        const today = new Date().toISOString().split('T')[0]
-        return baseCotizaciones.map((item, index) => ({
-            ...item,
-            state: 'Sin iniciar',
-            dimension: dimensiones[index % dimensiones.length] === 'Operativa' ? 'Costo' : dimensiones[index % dimensiones.length],
-            objective: objetivos[index % objetivos.length],
-            startDate: today,
-            endDate: ''
-        }))
+        return baseCotizaciones
     })
 
     // 3. STATE FOR COMPROMISOS
@@ -271,8 +206,11 @@ export default function MCIPage() {
                         return parsed.map((snap: any) => ({
                             ...snap,
                             items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
-                                ...item,
-                                dimension: item.dimension === 'Operativa' ? 'Costo' : item.dimension
+                                id: item.id,
+                                fecha: item.fecha || item.startDate || snap.date || '2026-02-12',
+                                responsable: item.responsable || 'Nalle',
+                                tipo: item.tipo || 'Outbound',
+                                descripcion: item.descripcion || item.name || 'Cotización de proveedor'
                             })) : []
                         }))
                     }
@@ -389,13 +327,29 @@ export default function MCIPage() {
 
         return { total, p1, p2, p3, totalMoney }
     }, [currentInitiatives])
-
-
     const currentCotizaciones = useMemo(() => {
         if (selectedSnapshotPred2 === 'active') return cotizaciones
         const snap = cotizacionesSnapshots.find(s => s.date === selectedSnapshotPred2)
         return snap ? snap.items : []
     }, [cotizaciones, cotizacionesSnapshots, selectedSnapshotPred2])
+
+    const getTargetQuotations = (toDateStr: string) => {
+        const startDate = new Date('2026-02-12T00:00:00')
+        const endDate = new Date(toDateStr + 'T00:00:00')
+        if (endDate < startDate) return 0
+        const diffTime = endDate.getTime() - startDate.getTime()
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+        return Math.floor(diffDays / 7) + 1
+    }
+
+    const cotizacionesStats = useMemo(() => {
+        const selectedDate = selectedSnapshotPred2 === 'active' ? reviewDatePred2 : selectedSnapshotPred2
+        const target = getTargetQuotations(selectedDate)
+        // Count cotizaciones whose date is less than or equal to selectedDate
+        const realCount = currentCotizaciones.filter((c: Cotizacion) => c.fecha <= selectedDate).length
+        const status = realCount >= target ? 'Cumpliendo' : 'No cumpliendo'
+        return { target, real: realCount, status }
+    }, [currentCotizaciones, selectedSnapshotPred2, reviewDatePred2])
 
     const currentCompromisos = useMemo(() => {
         if (selectedSnapshotCompromisos === 'active') return compromisos
@@ -448,26 +402,19 @@ export default function MCIPage() {
     const handleUpdateCotizacion = (id: number, field: string, value: string) => {
         setCotizaciones(prev => prev.map(item => {
             if (item.id !== id) return item;
-            const updated = { ...item, [field]: value };
-            if (field === 'state' && value === 'cerrada ganada' && !updated.endDate) {
-                updated.endDate = new Date().toISOString().split('T')[0];
-            }
-            return updated;
+            return { ...item, [field]: value };
         }))
     }
 
     const handleAddCotizacion = () => {
-        const today = new Date().toISOString().split('T')[0]
+        const defaultDate = reviewDatePred2 || new Date().toISOString().split('T')[0]
         const newId = cotizaciones.length > 0 ? Math.max(...cotizaciones.map(c => c.id)) + 1 : 1
         const newItem = {
             id: newId,
-            priority: 1,
-            name: 'Nueva Cotización / Proveedor',
-            state: 'Sin iniciar',
-            dimension: dimensiones[0],
-            objective: objetivos[0],
-            startDate: today,
-            endDate: ''
+            fecha: defaultDate,
+            responsable: 'Nalle',
+            tipo: 'Outbound',
+            descripcion: 'Nueva cotización'
         }
         setCotizaciones(prev => [newItem, ...prev])
     }
@@ -835,6 +782,44 @@ export default function MCIPage() {
                     </div>
                 )}
 
+                {/* Cotizaciones Calculator / Summary Panel */}
+                {activeTab === 'pred2' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fecha de Corte</span>
+                            <span className="text-lg font-black text-[#254153] mt-1">
+                                {selectedSnapshotPred2 === 'active' ? reviewDatePred2 : selectedSnapshotPred2}
+                            </span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-[#254153]">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Meta Acumulada</span>
+                            <span className="text-2xl font-black text-[#254153] mt-1">{cotizacionesStats.target}</span>
+                        </div>
+                        <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-col justify-center border-l-4 border-l-indigo-500">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Real Acumulado</span>
+                            <span className="text-2xl font-black text-indigo-600 mt-1">{cotizacionesStats.real}</span>
+                        </div>
+                        <div className={`rounded-xl p-4 border shadow-sm flex flex-col justify-center text-white ${
+                            cotizacionesStats.status === 'Cumpliendo' 
+                                ? 'bg-emerald-600 border-emerald-700' 
+                                : 'bg-rose-600 border-rose-700'
+                        }`}>
+                            <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Estado de Medida</span>
+                            <span className="text-xl font-black mt-1 flex items-center gap-1.5">
+                                {cotizacionesStats.status === 'Cumpliendo' ? (
+                                    <>
+                                        <CheckCircle2 className="w-5 h-5" /> Cumpliendo
+                                    </>
+                                ) : (
+                                    <>
+                                        <AlertCircle className="w-5 h-5" /> No Cumpliendo
+                                    </>
+                                )}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Tab Content */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
                     {/* PREDICTIVA 1 (DESARROLLO DE INICIATIVAS) */}
@@ -1114,6 +1099,12 @@ export default function MCIPage() {
                                             >
                                                 Guardar Foto
                                             </button>
+                                            <button
+                                                onClick={handleAddCotizacion}
+                                                className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-sm"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" /> Agregar Cotización
+                                            </button>
                                         </div>
                                     ) : (
                                         <button
@@ -1123,18 +1114,10 @@ export default function MCIPage() {
                                             Volver a Edición
                                         </button>
                                     )}
-
+                                    
                                     <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
                                         Mostrando {filteredAndSortedCotizaciones.length} registros
                                     </div>
-                                    {selectedSnapshotPred2 === 'active' && (
-                                        <button
-                                            onClick={handleAddCotizacion}
-                                            className="bg-[#254153] hover:bg-[#1a2f3d] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
-                                        >
-                                            <Plus className="w-3.5 h-3.5" /> Agregar Cotización
-                                        </button>
-                                    )}
                                 </div>
                             </div>
 
@@ -1157,102 +1140,67 @@ export default function MCIPage() {
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
                                         <tr className="bg-white border-b border-slate-100">
-                                            <CotTh label="Prioridad" sortKey="priority" width="w-24" />
-                                            <CotTh label="Proveedor / Item" sortKey="name" width="min-w-[200px]" />
-                                            <CotTh label="Dimensión" sortKey="dimension" />
-                                            <CotTh label="Objetivo" sortKey="objective" />
-                                            <CotTh label="Fecha Inicio" sortKey="startDate" />
-                                            <CotTh label="Fecha Fin" sortKey="endDate" />
-                                            <CotTh label="Duración (días)" sortKey="duration" />
-                                            <CotTh label="Estado" sortKey="state" width="w-48" />
+                                            <CotTh label="Fecha" sortKey="fecha" width="w-40" />
+                                            <CotTh label="Responsable" sortKey="responsable" width="w-48" />
+                                            <CotTh label="Tipo/Origen" sortKey="tipo" width="w-48" />
+                                            <CotTh label="Descripción" sortKey="descripcion" width="min-w-[300px]" />
                                             <th className="px-3 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {filteredAndSortedCotizaciones.map((item) => (
+                                        {filteredAndSortedCotizaciones.map((item: Cotizacion) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                                                <td className="px-3 py-4 text-center align-middle">
-                                                    <select
-                                                        value={item.priority}
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'priority', e.target.value)}
-                                                        disabled={selectedSnapshotPred2 !== 'active'}
-                                                        className={`inline-flex items-center justify-center w-12 h-8 rounded text-sm font-bold border focus:outline-none focus:ring-1 focus:ring-[#254153] disabled:opacity-80 disabled:cursor-not-allowed ${getPriorityColor(Number(item.priority))}`}
-                                                    >
-                                                        <option value="1">1</option>
-                                                        <option value="2">2</option>
-                                                        <option value="3">3</option>
-                                                    </select>
-                                                </td>
-                                                <td className="px-3 py-4 align-middle">
-                                                    <input
-                                                        type="text"
-                                                        value={item.name}
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'name', e.target.value)}
-                                                        disabled={selectedSnapshotPred2 !== 'active'}
-                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2.5 py-1.5 outline-none rounded transition-all min-w-[250px] disabled:bg-transparent"
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-4 align-middle">
-                                                    <select 
-                                                        value={item.dimension} 
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'dimension', e.target.value)}
-                                                        disabled={selectedSnapshotPred2 !== 'active'}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
-                                                    >
-                                                        {dimensiones.map(d => <option key={d} value={d}>{d}</option>)}
-                                                    </select>
-                                                </td>
-                                                <td className="px-3 py-4 align-middle">
-                                                    <select 
-                                                        value={item.objective} 
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'objective', e.target.value)}
-                                                        disabled={selectedSnapshotPred2 !== 'active'}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white min-w-[180px] whitespace-normal disabled:bg-slate-50 disabled:text-slate-500"
-                                                    >
-                                                        {objetivos.map(o => <option key={o} value={o}>{o}</option>)}
-                                                    </select>
-                                                </td>
-                                                <td className="px-3 py-4 align-middle">
+                                                <td className="px-3 py-4 align-middle w-40">
                                                     <input 
                                                         type="date" 
-                                                        value={item.startDate} 
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'startDate', e.target.value)}
+                                                        value={item.fecha} 
+                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'fecha', e.target.value)}
                                                         disabled={selectedSnapshotPred2 !== 'active'}
-                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500"
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:border-[#254153]"
                                                     />
                                                 </td>
-                                                <td className="px-3 py-4 align-middle">
-                                                    <input 
-                                                        type="date" 
-                                                        value={item.endDate} 
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'endDate', e.target.value)}
-                                                        className={`w-full text-xs font-medium px-2 py-1.5 rounded border ${item.state !== 'cerrada ganada' || selectedSnapshotPred2 !== 'active' ? 'bg-slate-100 text-slate-400 border-transparent' : 'bg-white border-slate-200'}`}
-                                                        disabled={item.state !== 'cerrada ganada' || selectedSnapshotPred2 !== 'active'}
-                                                    />
-                                                </td>
-                                                <td className="px-3 py-4 text-center align-middle">
-                                                    <span className="text-sm font-bold text-[#254153]">
-                                                        {calculateDuration(item.startDate, item.endDate) !== '' ? `${calculateDuration(item.startDate, item.endDate)}` : '-'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-3 py-4 align-middle">
-                                                    <select
-                                                        value={item.state}
-                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'state', e.target.value)}
+                                                <td className="px-3 py-4 align-middle w-48">
+                                                    <select 
+                                                        value={item.responsable} 
+                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'responsable', e.target.value)}
                                                         disabled={selectedSnapshotPred2 !== 'active'}
-                                                        className={`w-full appearance-none outline-none text-xs font-bold uppercase tracking-wider px-3 py-2 rounded-lg cursor-pointer transition-colors border-2 border-transparent hover:border-slate-200 focus:border-[#254153] disabled:cursor-not-allowed ${getStateColor(item.state)}`}
+                                                        title={item.responsable}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:border-[#254153]"
                                                     >
-                                                        {states.map(s => (
-                                                            <option key={s} value={s}>{s}</option>
-                                                        ))}
+                                                        <option value="Nalle">Nalle</option>
+                                                        <option value="Alejo">Alejo</option>
+                                                        <option value="Isabel">Isabel</option>
+                                                        <option value="Cata">Cata</option>
                                                     </select>
+                                                </td>
+                                                <td className="px-3 py-4 align-middle w-48">
+                                                    <select 
+                                                        value={item.tipo} 
+                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'tipo', e.target.value)}
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        title={item.tipo}
+                                                        className="w-full text-xs font-medium px-2 py-1.5 rounded border border-slate-200 bg-white disabled:bg-slate-50 disabled:text-slate-500 focus:outline-none focus:border-[#254153]"
+                                                    >
+                                                        <option value="Outbound">Outbound</option>
+                                                        <option value="Iniciativa propia">Iniciativa propia</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-3 py-4 align-middle">
+                                                    <textarea
+                                                        value={item.descripcion}
+                                                        onChange={(e) => handleUpdateCotizacion(item.id, 'descripcion', e.target.value)}
+                                                        disabled={selectedSnapshotPred2 !== 'active'}
+                                                        title={item.descripcion}
+                                                        rows={2}
+                                                        className="w-full font-semibold text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-2 py-1 outline-none rounded transition-all min-w-[300px] resize-none text-xs leading-normal disabled:bg-transparent disabled:text-slate-500"
+                                                    />
                                                 </td>
                                                 <td className="px-3 py-4 text-center align-middle">
                                                     <button
                                                         onClick={() => handleDeleteCotizacion(item.id)}
                                                         disabled={selectedSnapshotPred2 !== 'active'}
                                                         className="p-1.5 text-rose-500 hover:bg-rose-50 rounded transition-colors cursor-pointer disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                                                        title="Eliminar fila"
+                                                        title="Eliminar cotización"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
