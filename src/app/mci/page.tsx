@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/utils/supabase/client'
 import {
     ArrowLeft,
     Home,
@@ -166,17 +167,108 @@ export default function MCIPage() {
         ]
     })
 
-    // Sync to LocalStorage
+    const isInitialLoadRef = useRef(true)
+
+    const saveToSupabase = async (key: string, value: any) => {
+        if (isInitialLoadRef.current) return
+        try {
+            const { error } = await supabase
+                .from('Neg_mci_data')
+                .upsert({ key, value, updated_at: new Date().toISOString() })
+            if (error) {
+                console.error(`Error saving ${key} to Supabase:`, error.message)
+            }
+        } catch (err) {
+            console.error(`Network error saving ${key} to Supabase:`, err)
+        }
+    }
+
+    // Load from Supabase on mount
+    useEffect(() => {
+        const loadMCIData = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('Neg_mci_data')
+                    .select('*')
+                
+                if (error) {
+                    console.warn('Could not load MCI data from Supabase, using localStorage:', error.message)
+                    isInitialLoadRef.current = false
+                    return
+                }
+
+                if (data && data.length > 0) {
+                    isInitialLoadRef.current = true
+
+                    data.forEach((row: any) => {
+                        const val = row.value
+                        if (row.key === 'mci_initiatives' && Array.isArray(val)) {
+                            setInitiatives(val)
+                        } else if (row.key === 'mci_cotizaciones' && Array.isArray(val)) {
+                            const migrated = val.map((item: any) => {
+                                const oldState = item.state
+                                const defaultEstado = (oldState === 'cerrada ganada' || oldState === 'cerrada perdida') ? 'Analizada cerrada' : 'Cotizacion recibida'
+                                return {
+                                    id: item.id,
+                                    fecha: item.fecha || item.startDate || '2026-02-12',
+                                    responsable: item.responsable || 'Nalle',
+                                    tipo: (item.tipo === 'Iniciativa propia' ? 'Inbound' : item.tipo) || 'Outbound',
+                                    descripcion: item.descripcion || item.name || 'Cotización de proveedor',
+                                    estado: item.estado || defaultEstado
+                                }
+                            })
+                            setCotizaciones(migrated)
+                        } else if (row.key === 'mci_compromisos' && Array.isArray(val)) {
+                            setCompromisos(val)
+                        } else if (row.key === 'mci_initiatives_snapshots' && Array.isArray(val)) {
+                            setInitiativesSnapshots(val)
+                        } else if (row.key === 'mci_cotizaciones_snapshots' && Array.isArray(val)) {
+                            const migratedSnapshots = val.map((snap: any) => ({
+                                ...snap,
+                                items: Array.isArray(snap.items) ? snap.items.map((item: any) => {
+                                    const oldState = item.state
+                                    const defaultEstado = (oldState === 'cerrada ganada' || oldState === 'cerrada perdida') ? 'Analizada cerrada' : 'Cotizacion recibida'
+                                    return {
+                                        id: item.id,
+                                        fecha: item.fecha || item.startDate || snap.date || '2026-02-12',
+                                        responsable: item.responsable || 'Nalle',
+                                        tipo: (item.tipo === 'Iniciativa propia' ? 'Inbound' : item.tipo) || 'Outbound',
+                                        descripcion: item.descripcion || item.name || 'Cotización de proveedor',
+                                        estado: item.estado || defaultEstado
+                                    }
+                                }) : []
+                            }))
+                            setCotizacionesSnapshots(migratedSnapshots)
+                        } else if (row.key === 'mci_compromisos_snapshots' && Array.isArray(val)) {
+                            setCompromisosSnapshots(val)
+                        }
+                    })
+                }
+            } catch (err) {
+                console.warn('Failed to connect to Supabase for MCI data, using localStorage fallback', err)
+            } finally {
+                setTimeout(() => {
+                    isInitialLoadRef.current = false
+                }, 500)
+            }
+        }
+        loadMCIData()
+    }, [])
+
+    // Sync to LocalStorage & Supabase
     useEffect(() => {
         localStorage.setItem('mci_initiatives', JSON.stringify(initiatives))
+        saveToSupabase('mci_initiatives', initiatives)
     }, [initiatives])
 
     useEffect(() => {
         localStorage.setItem('mci_cotizaciones', JSON.stringify(cotizaciones))
+        saveToSupabase('mci_cotizaciones', cotizaciones)
     }, [cotizaciones])
 
     useEffect(() => {
         localStorage.setItem('mci_compromisos', JSON.stringify(compromisos))
+        saveToSupabase('mci_compromisos', compromisos)
     }, [compromisos])
 
     // --- SNAPSHOTS (PHOTOS) LOGIC FOR MCI SNAPSHOTS ---
@@ -251,17 +343,20 @@ export default function MCIPage() {
     const [reviewDatePred2, setReviewDatePred2] = useState(() => new Date().toISOString().split('T')[0])
     const [reviewDateCompromisos, setReviewDateCompromisos] = useState(() => new Date().toISOString().split('T')[0])
 
-    // Sync snapshots to localstorage
+    // Sync snapshots to localstorage & Supabase
     useEffect(() => {
         localStorage.setItem('mci_initiatives_snapshots', JSON.stringify(initiativesSnapshots))
+        saveToSupabase('mci_initiatives_snapshots', initiativesSnapshots)
     }, [initiativesSnapshots])
 
     useEffect(() => {
         localStorage.setItem('mci_cotizaciones_snapshots', JSON.stringify(cotizacionesSnapshots))
+        saveToSupabase('mci_cotizaciones_snapshots', cotizacionesSnapshots)
     }, [cotizacionesSnapshots])
 
     useEffect(() => {
         localStorage.setItem('mci_compromisos_snapshots', JSON.stringify(compromisosSnapshots))
+        saveToSupabase('mci_compromisos_snapshots', compromisosSnapshots)
     }, [compromisosSnapshots])
 
     // Snapshot actions
