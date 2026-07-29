@@ -90,6 +90,39 @@ interface Compromiso {
     responsable: string
     fecha: string
     estado: string
+    comentario?: string
+}
+
+interface TableHeaderCellProps {
+    label: string
+    sortKey: string
+    width?: string
+    filterValue?: string
+    onSort: (key: string) => void
+    onFilterChange: (key: string, value: string) => void
+}
+
+function TableHeaderCell({ label, sortKey, width, filterValue, onSort, onFilterChange }: TableHeaderCellProps) {
+    return (
+        <th className={`px-3 py-4 align-top ${width || 'auto'}`}>
+            <div className="flex flex-col gap-2">
+                <button 
+                    onClick={() => onSort(sortKey)} 
+                    className="flex items-center gap-1 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs tracking-wider text-left cursor-pointer"
+                >
+                    {label}
+                    <ArrowUpDown className="w-3 h-3 opacity-50" />
+                </button>
+                <input 
+                    type="text" 
+                    placeholder="Filtrar..." 
+                    value={filterValue || ''}
+                    onChange={(e) => onFilterChange(sortKey, e.target.value)}
+                    className="w-full text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-[#254153] font-normal bg-slate-50 focus:bg-white"
+                />
+            </div>
+        </th>
+    )
 }
 
 export default function MCIPage() {
@@ -157,13 +190,21 @@ export default function MCIPage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('mci_compromisos')
             if (saved) {
-                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+                try {
+                    const parsed = JSON.parse(saved)
+                    if (Array.isArray(parsed)) {
+                        return parsed.map((item: any) => ({
+                            ...item,
+                            comentario: item.comentario || ''
+                        }))
+                    }
+                } catch (e) { console.error(e) }
             }
         }
         return [
-            { id: 1, compromiso: 'definir impacto de ahorro en strech', responsable: 'Cata', fecha: '2026-06-11', estado: 'Pendiente' },
-            { id: 2, compromiso: 'Reunión de alineación con proveedor Cartan', responsable: 'Alejo', fecha: '2026-06-15', estado: 'Realizado' },
-            { id: 3, compromiso: 'Revisar cotizaciones de PVC Foamboard', responsable: 'Isabel', fecha: '2026-06-18', estado: 'En proceso' }
+            { id: 1, compromiso: 'definir impacto de ahorro en strech', responsable: 'Cata', fecha: '2026-06-11', estado: 'Pendiente', comentario: '' },
+            { id: 2, compromiso: 'Reunión de alineación con proveedor Cartan', responsable: 'Alejo', fecha: '2026-06-15', estado: 'Realizado', comentario: '' },
+            { id: 3, compromiso: 'Revisar cotizaciones de PVC Foamboard', responsable: 'Isabel', fecha: '2026-06-18', estado: 'En proceso', comentario: '' }
         ]
     })
 
@@ -219,7 +260,11 @@ export default function MCIPage() {
                             })
                             setCotizaciones(migrated)
                         } else if (row.key === 'mci_compromisos' && Array.isArray(val)) {
-                            setCompromisos(val)
+                            const migrated = val.map((item: any) => ({
+                                ...item,
+                                comentario: item.comentario || ''
+                            }))
+                            setCompromisos(migrated)
                         } else if (row.key === 'mci_initiatives_snapshots' && Array.isArray(val)) {
                             setInitiativesSnapshots(val)
                         } else if (row.key === 'mci_cotizaciones_snapshots' && Array.isArray(val)) {
@@ -240,7 +285,14 @@ export default function MCIPage() {
                             }))
                             setCotizacionesSnapshots(migratedSnapshots)
                         } else if (row.key === 'mci_compromisos_snapshots' && Array.isArray(val)) {
-                            setCompromisosSnapshots(val)
+                            const migratedSnapshots = val.map((snap: any) => ({
+                                ...snap,
+                                items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
+                                    ...item,
+                                    comentario: item.comentario || ''
+                                })) : []
+                            }))
+                            setCompromisosSnapshots(migratedSnapshots)
                         }
                     })
                 }
@@ -327,7 +379,18 @@ export default function MCIPage() {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('mci_compromisos_snapshots')
             if (saved) {
-                try { return JSON.parse(saved) } catch (e) { console.error(e) }
+                try {
+                    const parsed = JSON.parse(saved)
+                    if (Array.isArray(parsed)) {
+                        return parsed.map((snap: any) => ({
+                            ...snap,
+                            items: Array.isArray(snap.items) ? snap.items.map((item: any) => ({
+                                ...item,
+                                comentario: item.comentario || ''
+                            })) : []
+                        }))
+                    }
+                } catch (e) { console.error(e) }
             }
         }
         return []
@@ -402,6 +465,11 @@ export default function MCIPage() {
         if (!reviewDateCompromisos) return alert('Por favor selecciona una fecha.')
         const exists = compromisosSnapshots.some(s => s.date === reviewDateCompromisos)
         if (exists && !confirm(`Ya existe una foto para la fecha ${reviewDateCompromisos}. ¿Deseas sobrescribirla?`)) return
+        
+        // Guardar compromisos activos en localstorage y Supabase al momento de tomar la foto
+        localStorage.setItem('mci_compromisos', JSON.stringify(compromisos))
+        saveToSupabase('mci_compromisos', compromisos)
+
         setCompromisosSnapshots(prev => {
             const filtered = prev.filter(s => s.date !== reviewDateCompromisos)
             return [...filtered, { date: reviewDateCompromisos, items: JSON.parse(JSON.stringify(compromisos)) }].sort((a, b) => b.date.localeCompare(a.date))
@@ -479,6 +547,10 @@ export default function MCIPage() {
     const [cotSortConfig, setCotSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
     const [cotFilters, setCotFilters] = useState<Record<string, string>>({})
 
+    // Filters & Sorting for Compromisos
+    const [compSortConfig, setCompSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null)
+    const [compFilters, setCompFilters] = useState<Record<string, string>>({})
+
     const handleUpdate = (id: number, field: string, value: any) => {
         setInitiatives(prev => prev.map(item => {
             if (item.id !== id) return item;
@@ -555,7 +627,8 @@ export default function MCIPage() {
             compromiso: '',
             responsable: 'Isabel',
             fecha: today,
-            estado: 'Pendiente'
+            estado: 'Pendiente',
+            comentario: ''
         }
         setCompromisos(prev => [newItem, ...prev])
     }
@@ -687,47 +760,42 @@ export default function MCIPage() {
         return result;
     }, [currentCotizaciones, cotSortConfig, cotFilters]);
 
-    const Th = ({ label, sortKey, width }: { label: string, sortKey: string, width?: string }) => (
-        <th className={`px-3 py-4 align-top ${width || 'auto'}`}>
-            <div className="flex flex-col gap-2">
-                <button 
-                    onClick={() => handleSort(sortKey)} 
-                    className="flex items-center gap-1 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs tracking-wider text-left"
-                >
-                    {label}
-                    <ArrowUpDown className="w-3 h-3 opacity-50" />
-                </button>
-                <input 
-                    type="text" 
-                    placeholder="Filtrar..." 
-                    value={filters[sortKey] || ''}
-                    onChange={(e) => handleFilterChange(sortKey, e.target.value)}
-                    className="w-full text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-[#254153] font-normal bg-slate-50 focus:bg-white"
-                />
-            </div>
-        </th>
-    );
+    const handleCompSort = (key: string) => {
+        let direction: 'asc' | 'desc' = 'asc';
+        if (compSortConfig && compSortConfig.key === key && compSortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setCompSortConfig({ key, direction });
+    }
 
-    const CotTh = ({ label, sortKey, width }: { label: string, sortKey: string, width?: string }) => (
-        <th className={`px-3 py-4 align-top ${width || 'auto'}`}>
-            <div className="flex flex-col gap-2">
-                <button 
-                    onClick={() => handleCotSort(sortKey)} 
-                    className="flex items-center gap-1 font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase text-xs tracking-wider text-left"
-                >
-                    {label}
-                    <ArrowUpDown className="w-3 h-3 opacity-50" />
-                </button>
-                <input 
-                    type="text" 
-                    placeholder="Filtrar..." 
-                    value={cotFilters[sortKey] || ''}
-                    onChange={(e) => handleCotFilterChange(sortKey, e.target.value)}
-                    className="w-full text-xs p-1.5 border border-slate-200 rounded outline-none focus:border-[#254153] font-normal bg-slate-50 focus:bg-white"
-                />
-            </div>
-        </th>
-    );
+    const handleCompFilterChange = (key: string, value: string) => {
+        setCompFilters(prev => ({ ...prev, [key]: value }));
+    }
+
+    const filteredAndSortedCompromisos = useMemo(() => {
+        let result = [...currentCompromisos];
+        Object.keys(compFilters).forEach(key => {
+            if (compFilters[key]) {
+                const filterValue = compFilters[key].toLowerCase();
+                result = result.filter(item => {
+                    const itemValue = (item as any)[key];
+                    if (itemValue === null || itemValue === undefined) return false;
+                    return itemValue.toString().toLowerCase().includes(filterValue);
+                });
+            }
+        });
+
+        if (compSortConfig) {
+            result.sort((a, b) => {
+                const aValue = String((a as any)[compSortConfig.key] || '').toLowerCase();
+                const bValue = String((b as any)[compSortConfig.key] || '').toLowerCase();
+                if (aValue < bValue) return compSortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return compSortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return result;
+    }, [currentCompromisos, compSortConfig, compFilters]);
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-24">
@@ -1058,14 +1126,14 @@ export default function MCIPage() {
                                                     />
                                                 </div>
                                             </th>
-                                            <Th label="Prioridad" sortKey="priority" width="w-24" />
-                                            <Th label="Iniciativa" sortKey="name" width="min-w-[200px]" />
-                                            <Th label="Dimensión" sortKey="dimension" />
-                                            <Th label="Objetivo" sortKey="objective" />
-                                            <Th label="Fecha Inicio" sortKey="startDate" />
-                                            <Th label="Fecha Fin" sortKey="endDate" />
-                                            <Th label="Duración (días)" sortKey="duration" />
-                                            <Th label="Estado" sortKey="state" width="w-48" />
+                                            <TableHeaderCell label="Prioridad" sortKey="priority" width="w-24" filterValue={filters['priority']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Iniciativa" sortKey="name" width="min-w-[200px]" filterValue={filters['name']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Dimensión" sortKey="dimension" filterValue={filters['dimension']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Objetivo" sortKey="objective" filterValue={filters['objective']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Fecha Inicio" sortKey="startDate" filterValue={filters['startDate']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Fecha Fin" sortKey="endDate" filterValue={filters['endDate']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Duración (días)" sortKey="duration" filterValue={filters['duration']} onSort={handleSort} onFilterChange={handleFilterChange} />
+                                            <TableHeaderCell label="Estado" sortKey="state" width="w-48" filterValue={filters['state']} onSort={handleSort} onFilterChange={handleFilterChange} />
                                             <th className="px-3 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
@@ -1267,11 +1335,11 @@ export default function MCIPage() {
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
                                         <tr className="bg-white border-b border-slate-100">
-                                            <CotTh label="Fecha" sortKey="fecha" width="w-40" />
-                                            <CotTh label="Responsable" sortKey="responsable" width="w-48" />
-                                            <CotTh label="Tipo/Origen" sortKey="tipo" width="w-48" />
-                                            <CotTh label="Descripción" sortKey="descripcion" width="min-w-[300px]" />
-                                            <CotTh label="Estado" sortKey="estado" width="w-48" />
+                                            <TableHeaderCell label="Fecha" sortKey="fecha" width="w-40" filterValue={cotFilters['fecha']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
+                                            <TableHeaderCell label="Responsable" sortKey="responsable" width="w-48" filterValue={cotFilters['responsable']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
+                                            <TableHeaderCell label="Tipo/Origen" sortKey="tipo" width="w-48" filterValue={cotFilters['tipo']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
+                                            <TableHeaderCell label="Descripción" sortKey="descripcion" width="min-w-[300px]" filterValue={cotFilters['descripcion']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
+                                            <TableHeaderCell label="Estado" sortKey="state" width="w-48" filterValue={cotFilters['estado']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
                                             <th className="px-3 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
@@ -1411,7 +1479,7 @@ export default function MCIPage() {
                                     )}
 
                                     <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
-                                        Total: {currentCompromisos.length} compromisos
+                                        Total: {filteredAndSortedCompromisos.length} compromisos
                                     </div>
                                     {selectedSnapshotCompromisos === 'active' && (
                                         <button
@@ -1443,15 +1511,16 @@ export default function MCIPage() {
                                 <table className="w-full text-left border-collapse whitespace-nowrap">
                                     <thead>
                                         <tr className="bg-white border-b border-slate-100">
-                                            <th className="px-6 py-4 w-20 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Estado</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider min-w-[350px]">Compromiso</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-48">Responsable</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider w-48">Fecha Límite</th>
-                                            <th className="px-6 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
+                                            <TableHeaderCell label="Estado" sortKey="estado" width="w-36" filterValue={compFilters['estado']} onSort={handleCompSort} onFilterChange={handleCompFilterChange} />
+                                            <TableHeaderCell label="Compromiso" sortKey="compromiso" width="min-w-[280px]" filterValue={compFilters['compromiso']} onSort={handleCompSort} onFilterChange={handleCompFilterChange} />
+                                            <TableHeaderCell label="Comentario" sortKey="comentario" width="min-w-[250px]" filterValue={compFilters['comentario']} onSort={handleCompSort} onFilterChange={handleCompFilterChange} />
+                                            <TableHeaderCell label="Responsable" sortKey="responsable" width="w-44" filterValue={compFilters['responsable']} onSort={handleCompSort} onFilterChange={handleCompFilterChange} />
+                                            <TableHeaderCell label="Fecha Límite" sortKey="fecha" width="w-44" filterValue={compFilters['fecha']} onSort={handleCompSort} onFilterChange={handleCompFilterChange} />
+                                            <th className="px-6 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider align-top">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {currentCompromisos.map((item: Compromiso) => (
+                                        {filteredAndSortedCompromisos.map((item: Compromiso) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                                 <td className="px-6 py-4 text-center align-middle">
                                                     <select
@@ -1479,6 +1548,16 @@ export default function MCIPage() {
                                                         placeholder="Describa el compromiso..."
                                                         disabled={selectedSnapshotCompromisos !== 'active'}
                                                         className="w-full font-medium text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-3 py-2 outline-none rounded transition-all min-w-[300px] disabled:bg-transparent"
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4 align-middle">
+                                                    <input
+                                                        type="text"
+                                                        value={item.comentario || ''}
+                                                        onChange={(e) => handleUpdateCompromiso(item.id, 'comentario', e.target.value)}
+                                                        placeholder="Agregar comentario..."
+                                                        disabled={selectedSnapshotCompromisos !== 'active'}
+                                                        className="w-full text-sm font-normal text-slate-700 bg-transparent hover:bg-slate-100/50 focus:bg-white border border-transparent focus:border-slate-200 px-3 py-2 outline-none rounded transition-all min-w-[250px] disabled:bg-transparent"
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 align-middle">
@@ -1515,10 +1594,10 @@ export default function MCIPage() {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {currentCompromisos.length === 0 && (
+                                        {filteredAndSortedCompromisos.length === 0 && (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
-                                                    No hay compromisos creados para esta semana. ¡Haz clic en "Agregar Compromiso" para empezar!
+                                                <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
+                                                    No hay compromisos que coincidan con la búsqueda. ¡Haz clic en "Agregar Compromiso" para empezar!
                                                 </td>
                                             </tr>
                                         )}
