@@ -461,7 +461,10 @@ export default function MCIPage() {
         }
     }
 
-    const handleSaveSnapshotCompromisos = () => {
+    const [isSyncingPlanner, setIsSyncingPlanner] = useState(false)
+    const [plannerSyncStatus, setPlannerSyncStatus] = useState<{ ok: boolean; message: string } | null>(null)
+
+    const handleSaveSnapshotCompromisos = async () => {
         if (!reviewDateCompromisos) return alert('Por favor selecciona una fecha.')
         const exists = compromisosSnapshots.some(s => s.date === reviewDateCompromisos)
         if (exists && !confirm(`Ya existe una foto para la fecha ${reviewDateCompromisos}. ¿Deseas sobrescribirla?`)) return
@@ -475,7 +478,42 @@ export default function MCIPage() {
             return [...filtered, { date: reviewDateCompromisos, items: JSON.parse(JSON.stringify(compromisos)) }].sort((a, b) => b.date.localeCompare(a.date))
         })
         setSelectedSnapshotCompromisos(reviewDateCompromisos)
-        alert('Foto guardada correctamente.')
+
+        // Sincronizar automáticamente con la tarea de Microsoft Planner ("Compromisos MCI")
+        setIsSyncingPlanner(true)
+        setPlannerSyncStatus(null)
+        try {
+            const res = await fetch('/api/planner/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    compromisos,
+                    reviewDate: reviewDateCompromisos
+                })
+            })
+            const data = await res.json()
+            if (res.ok && data.ok) {
+                setPlannerSyncStatus({
+                    ok: true,
+                    message: `Sincronizado con Planner (${data.syncedCount} compromisos)`
+                })
+                alert(`Foto guardada y ${data.syncedCount} compromiso(s) enviados a Microsoft Planner correctamente.`)
+            } else {
+                setPlannerSyncStatus({
+                    ok: false,
+                    message: data.error || 'No se pudo sincronizar con Planner'
+                })
+                alert(`Foto guardada localmente, pero hubo un detalle al enviar a Microsoft Planner:\n\n${data.error}`)
+            }
+        } catch (err: any) {
+            setPlannerSyncStatus({
+                ok: false,
+                message: 'Error de red al conectar con Planner'
+            })
+            alert('Foto guardada localmente, pero ocurrió un error de red al intentar sincronizar con Microsoft Planner.')
+        } finally {
+            setIsSyncingPlanner(false)
+        }
     }
 
     const handleDeleteSnapshotCompromisos = (date: string) => {
@@ -1460,9 +1498,11 @@ export default function MCIPage() {
                                             />
                                             <button
                                                 onClick={handleSaveSnapshotCompromisos}
-                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                                                disabled={isSyncingPlanner}
+                                                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
                                             >
-                                                Guardar Foto
+                                                <CalendarCheck className="w-3.5 h-3.5" />
+                                                {isSyncingPlanner ? 'Guardando y enviando a Planner...' : 'Guardar Foto y Enviar a Planner'}
                                             </button>
                                         </div>
                                     ) : (
@@ -1473,6 +1513,17 @@ export default function MCIPage() {
                                             Volver a Edición
                                         </button>
                                     )}
+
+                                    <a
+                                        href="https://planner.cloud.microsoft/ui/web/v1/plan/2kGcLc7a1UOBsaA1cO6JBWQAFEOB/view/board/task/2wWpIG7OAkiUmiHmvd8vA2QAPssG?tid=fa1de04f-4780-4d83-a942-93c7ae8dee9d"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors flex items-center gap-1.5"
+                                        title="Abrir tarea Compromisos MCI en Microsoft Planner"
+                                    >
+                                        <CalendarCheck className="w-3.5 h-3.5" />
+                                        Ver en Planner
+                                    </a>
 
                                     <div className="text-xs text-slate-500 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm font-medium">
                                         Total: {filteredAndSortedCompromisos.length} compromisos
@@ -1487,6 +1538,29 @@ export default function MCIPage() {
                                     )}
                                 </div>
                             </div>
+
+                            {plannerSyncStatus && (
+                                <div className={`border-b px-6 py-3 flex items-center justify-between text-xs font-semibold ${
+                                    plannerSyncStatus.ok
+                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                                        : 'bg-rose-50 border-rose-100 text-rose-800'
+                                }`}>
+                                    <span className="flex items-center gap-2">
+                                        {plannerSyncStatus.ok ? (
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                        ) : (
+                                            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                        )}
+                                        {plannerSyncStatus.message}
+                                    </span>
+                                    <button
+                                        onClick={() => setPlannerSyncStatus(null)}
+                                        className="text-slate-500 hover:text-slate-800 ml-4 cursor-pointer"
+                                    >
+                                        Cerrar
+                                    </button>
+                                </div>
+                            )}
 
                             {selectedSnapshotCompromisos !== 'active' && (
                                 <div className="bg-amber-50 border-b border-amber-100 px-6 py-3 flex items-center justify-between text-amber-800 text-xs font-semibold">
