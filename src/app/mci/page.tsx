@@ -639,6 +639,8 @@ export default function MCIPage() {
         }
     }
 
+    const normalizeStr = (str: any) => String(str ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
     const calculateDuration = (start: string, end: string) => {
         if (!start || !end) return '';
         const startDate = new Date(start);
@@ -684,14 +686,14 @@ export default function MCIPage() {
         let result = [...currentInitiatives];
         Object.keys(filters).forEach(key => {
             if (filters[key]) {
-                const filterValue = filters[key].toLowerCase();
+                const filterValue = normalizeStr(filters[key]);
                 result = result.filter(item => {
                     let itemValue = (item as any)[key];
                     if (key === 'duration') {
                         itemValue = calculateDuration(item.startDate, item.endDate);
                     }
                     if (itemValue === null || itemValue === undefined) return false;
-                    return itemValue.toString().toLowerCase().includes(filterValue);
+                    return normalizeStr(itemValue).includes(filterValue);
                 });
             }
         });
@@ -732,26 +734,19 @@ export default function MCIPage() {
         let result = [...currentCotizaciones];
         Object.keys(cotFilters).forEach(key => {
             if (cotFilters[key]) {
-                const filterValue = cotFilters[key].toLowerCase();
+                const filterValue = normalizeStr(cotFilters[key]);
                 result = result.filter(item => {
-                    let itemValue = (item as any)[key];
-                    if (key === 'duration') {
-                        itemValue = calculateDuration(item.startDate, item.endDate);
-                    }
+                    const itemValue = (item as any)[key];
                     if (itemValue === null || itemValue === undefined) return false;
-                    return itemValue.toString().toLowerCase().includes(filterValue);
+                    return normalizeStr(itemValue).includes(filterValue);
                 });
             }
         });
 
         if (cotSortConfig) {
             result.sort((a, b) => {
-                let aValue = (a as any)[cotSortConfig.key];
-                let bValue = (b as any)[cotSortConfig.key];
-                if (cotSortConfig.key === 'duration') {
-                    aValue = calculateDuration(a.startDate, a.endDate) || 0;
-                    bValue = calculateDuration(b.startDate, b.endDate) || 0;
-                }
+                const aValue = String((a as any)[cotSortConfig.key] || '').toLowerCase();
+                const bValue = String((b as any)[cotSortConfig.key] || '').toLowerCase();
                 if (aValue < bValue) return cotSortConfig.direction === 'asc' ? -1 : 1;
                 if (aValue > bValue) return cotSortConfig.direction === 'asc' ? 1 : -1;
                 return 0;
@@ -776,11 +771,11 @@ export default function MCIPage() {
         let result = [...currentCompromisos];
         Object.keys(compFilters).forEach(key => {
             if (compFilters[key]) {
-                const filterValue = compFilters[key].toLowerCase();
+                const filterValue = normalizeStr(compFilters[key]);
                 result = result.filter(item => {
                     const itemValue = (item as any)[key];
                     if (itemValue === null || itemValue === undefined) return false;
-                    return itemValue.toString().toLowerCase().includes(filterValue);
+                    return normalizeStr(itemValue).includes(filterValue);
                 });
             }
         });
@@ -1339,7 +1334,7 @@ export default function MCIPage() {
                                             <TableHeaderCell label="Responsable" sortKey="responsable" width="w-48" filterValue={cotFilters['responsable']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
                                             <TableHeaderCell label="Tipo/Origen" sortKey="tipo" width="w-48" filterValue={cotFilters['tipo']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
                                             <TableHeaderCell label="Descripción" sortKey="descripcion" width="min-w-[300px]" filterValue={cotFilters['descripcion']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
-                                            <TableHeaderCell label="Estado" sortKey="state" width="w-48" filterValue={cotFilters['estado']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
+                                            <TableHeaderCell label="Estado" sortKey="estado" width="w-48" filterValue={cotFilters['estado']} onSort={handleCotSort} onFilterChange={handleCotFilterChange} />
                                             <th className="px-3 py-4 w-12 text-center text-xs font-bold text-slate-400 uppercase tracking-wider">Acciones</th>
                                         </tr>
                                     </thead>
@@ -1401,6 +1396,7 @@ export default function MCIPage() {
                                                     >
                                                         <option value="Cotizacion recibida">Cotizacion recibida</option>
                                                         <option value="Analizada cerrada">Analizada cerrada</option>
+                                                        <option value="Analizada perdida">Analizada perdida</option>
                                                         <option value="pendiente">pendiente</option>
                                                     </select>
                                                 </td>
