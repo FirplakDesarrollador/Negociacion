@@ -293,6 +293,11 @@ export default function MCIPage() {
                                 })) : []
                             }))
                             setCompromisosSnapshots(migratedSnapshots)
+                        } else if (row.key === 'mci_planner_delegated_token' && val) {
+                            setPlannerStoredToken(val)
+                            try {
+                                localStorage.setItem('mci_planner_delegated_token', JSON.stringify(val))
+                            } catch {}
                         }
                     })
                 }
@@ -463,6 +468,118 @@ export default function MCIPage() {
 
     const [isSyncingPlanner, setIsSyncingPlanner] = useState(false)
     const [plannerSyncStatus, setPlannerSyncStatus] = useState<{ ok: boolean; message: string } | null>(null)
+    const [plannerStoredToken, setPlannerStoredToken] = useState<any>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('mci_planner_delegated_token')
+            if (saved) {
+                try {
+                    return JSON.parse(saved)
+                } catch {}
+            }
+        }
+        return null
+    })
+    const [plannerDeviceAuth, setPlannerDeviceAuth] = useState<{
+        userCode: string
+        deviceCode: string
+        verificationUri: string
+    } | null>(null)
+    const [manualTokenInput, setManualTokenInput] = useState('')
+
+    const persistPlannerToken = (tokenObj: any) => {
+        if (!tokenObj) return
+        setPlannerStoredToken(tokenObj)
+        try {
+            localStorage.setItem('mci_planner_delegated_token', JSON.stringify(tokenObj))
+        } catch {}
+        saveToSupabase('mci_planner_delegated_token', tokenObj)
+    }
+
+    // Polling automático cuando se muestra el código de vinculación delegada (Device Code)
+    useEffect(() => {
+        if (!plannerDeviceAuth?.deviceCode) return
+        let cancelled = false
+
+        const interval = setInterval(async () => {
+            if (cancelled) return
+            try {
+                const res = await fetch('/api/planner/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'poll_device_code',
+                        deviceCode: plannerDeviceAuth.deviceCode,
+                        storedToken: plannerStoredToken,
+                        compromisos,
+                        reviewDate: reviewDateCompromisos
+                    })
+                })
+                const data = await res.json()
+                if (data?.newToken) {
+                    persistPlannerToken(data.newToken)
+                }
+                if (res.ok && data.ok) {
+                    cancelled = true
+                    clearInterval(interval)
+                    setPlannerDeviceAuth(null)
+                    setPlannerSyncStatus({
+                        ok: true,
+                        message: `Cuenta Microsoft vinculada y sincronizada con Planner (${data.syncedCount} compromisos)`
+                    })
+                    alert(`¡Cuenta vinculada! Se enviaron ${data.syncedCount} compromiso(s) a Microsoft Planner correctamente.`)
+                } else if (!data.pending && data.error) {
+                    cancelled = true
+                    clearInterval(interval)
+                    setPlannerSyncStatus({
+                        ok: false,
+                        message: data.error
+                    })
+                }
+            } catch {
+                // Seguir esperando en caso de error temporal de red
+            }
+        }, 4000)
+
+        return () => {
+            cancelled = true
+            clearInterval(interval)
+        }
+    }, [plannerDeviceAuth, compromisos, reviewDateCompromisos, plannerStoredToken])
+
+    const handleSaveManualPlannerToken = async () => {
+        if (!manualTokenInput.trim()) return alert('Pega el token de acceso primero.')
+        setIsSyncingPlanner(true)
+        try {
+            const res = await fetch('/api/planner/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'save_manual_token',
+                    manualToken: manualTokenInput.trim(),
+                    storedToken: plannerStoredToken,
+                    compromisos,
+                    reviewDate: reviewDateCompromisos
+                })
+            })
+            const data = await res.json()
+            if (data?.newToken) {
+                persistPlannerToken(data.newToken)
+            }
+            if (res.ok && data.ok) {
+                setPlannerDeviceAuth(null)
+                setManualTokenInput('')
+                setPlannerSyncStatus({
+                    ok: true,
+                    message: `Sincronizado con Planner (${data.syncedCount} compromisos)`
+                })
+                alert(`¡Listo! Se enviaron ${data.syncedCount} compromiso(s) a Microsoft Planner correctamente.`)
+            } else {
+                alert(`No se pudo sincronizar con ese token:\n\n${data.error || 'Error desconocido'}`)
+            }
+        } finally {
+            setIsSyncingPlanner(false)
+        }
+    }
 
     const handleSaveSnapshotCompromisos = async () => {
         if (!reviewDateCompromisos) return alert('Por favor selecciona una fecha.')
@@ -487,17 +604,31 @@ export default function MCIPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    action: 'sync',
+                    storedToken: plannerStoredToken,
                     compromisos,
                     reviewDate: reviewDateCompromisos
                 })
             })
             const data = await res.json()
+            if (data?.newToken) {
+                persistPlannerToken(data.newToken)
+            }
             if (res.ok && data.ok) {
                 setPlannerSyncStatus({
                     ok: true,
                     message: `Sincronizado con Planner (${data.syncedCount} compromisos)`
                 })
                 alert(`Foto guardada y ${data.syncedCount} compromiso(s) enviados a Microsoft Planner correctamente.`)
+            } else if (data.needsAuth && data.userCode) {
+                setPlannerDeviceAuth({
+                    userCode: data.userCode,
+                    deviceCode: data.deviceCode,
+                    verificationUri: data.verificationUri || 'https://login.microsoft.com/device'
+                })
+                try {
+                    await navigator.clipboard.writeText(data.userCode)
+                } catch {}
             } else {
                 setPlannerSyncStatus({
                     ok: false,
@@ -1677,6 +1808,74 @@ export default function MCIPage() {
                         </div>
                     )}
                 </div>
+
+                {plannerDeviceAuth && (
+                    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-lg font-bold text-[#254153] flex items-center gap-2">
+                                    <CalendarCheck className="w-5 h-5 text-emerald-600" />
+                                    Vincular cuenta Microsoft (1 sola vez)
+                                </h4>
+                                <button
+                                    onClick={() => setPlannerDeviceAuth(null)}
+                                    className="text-xs font-bold text-slate-400 hover:text-slate-700 cursor-pointer"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Para usar tu permiso delegado <strong>Tasks.ReadWrite</strong> de AGENTE PERFORMANCE, ingresa este código en Microsoft. Una vez vinculado, quedará guardado en Supabase para próximas fotos.
+                            </p>
+                            <div className="bg-slate-100 border border-slate-200 rounded-xl p-4 text-center">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                                    Código de vinculación (copiado al portapapeles)
+                                </span>
+                                <span className="text-2xl font-black tracking-widest text-[#254153] select-all">
+                                    {plannerDeviceAuth.userCode}
+                                </span>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <a
+                                    href={plannerDeviceAuth.verificationUri}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={() => {
+                                        try {
+                                            navigator.clipboard.writeText(plannerDeviceAuth.userCode)
+                                        } catch {}
+                                    }}
+                                    className="w-full bg-[#254153] hover:bg-[#1a2f3d] text-white text-center py-2.5 px-4 rounded-xl text-xs font-bold transition-colors"
+                                >
+                                    1. Abrir Microsoft ({plannerDeviceAuth.verificationUri}) y pegar código
+                                </a>
+                                <div className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2 text-center font-medium">
+                                    ⏳ Esperando confirmación de Microsoft... esta ventana se cerrará sola y enviará los compromisos apenas inicies sesión.
+                                </div>
+                            </div>
+                            <details className="text-xs text-slate-500 pt-2 border-t border-slate-100">
+                                <summary className="cursor-pointer font-semibold hover:text-slate-700">
+                                    ¿Alternativa manual con Access Token?
+                                </summary>
+                                <div className="mt-2 space-y-2">
+                                    <input
+                                        type="password"
+                                        value={manualTokenInput}
+                                        onChange={(e) => setManualTokenInput(e.target.value)}
+                                        placeholder="Pegar Access Token de Microsoft Graph..."
+                                        className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 outline-none focus:border-[#254153]"
+                                    />
+                                    <button
+                                        onClick={handleSaveManualPlannerToken}
+                                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold cursor-pointer"
+                                    >
+                                        Guardar Token y Sincronizar
+                                    </button>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                )}
 
             </main>
         </div>
