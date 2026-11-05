@@ -1,31 +1,73 @@
-// lib/simulador/types.ts
+export type ViewKey = 'y26' | 'ytd' | 'hz'
 
 export type Sku = {
-  id: string
-  name: string
+  n: string
+  r: string
+  pa: number
+  col: string
+  sh: number
+  hl: boolean
+  kgDef: number
+  pp: (number | null)[]
+  rk: number[]
+  rp: (number | null)[]
+  nt: string
+}
+
+export type OcqAlt = {
+  si: number
   ref: string
-  precioBaseMar26: number
-  share: number
-  esObjetivo: boolean
-  kgSimuladoDefault: number
-  nota?: string
-  kgReales: (number | null)[]
-  preciosReales: (number | null)[]
-  preciosPropuestosOriginales: (number | null)[]
+  lbl: string
+  bdg: [string, string]
+  def: number
+  buys: { m: number; kg: number; pay: number }[]
 }
 
-export type EstadoSimulacion = {
-  corte: number
-  kgSimulados: number[]
-  preciosPropuestos: number[][]
-  porcentajesNegociados: number[][]
+export type ViewDef = {
+  l: string
+  s: string
+  a: number
+  b: number
 }
 
-export const MESES = [
-  'Ene-26','Feb-26','Mar-26','Abr-26','May-26','Jun-26',
-  'Jul-26','Ago-26','Sep-26','Oct-26','Nov-26','Dic-26',
-  'Ene-27','Feb-27','Mar-27','Abr-27'
-] as const
+export type ScenarioSnap = {
+  negPct: number[][]
+  andP: number[][]
+  kgT: number[]
+  ocqP: number[]
+  desc: string
+}
 
-export const CORTE = 8 // Sep-26
-export const NM = MESES.length
+export type Totals = {
+  tA: number
+  tN: number
+  tV: number
+  tL: number
+  open: number
+}
+
+export type Dim26 = {
+  tot: number
+  sim: number
+  resto: number
+}
+
+export type SimState = {
+  view: ViewKey
+  kgT: number[]
+  andP: number[][]
+  negPct: number[][]
+  ocqP: number[]
+  scenarios: Record<'A' | 'B' | 'C', ScenarioSnap | null>
+  activeScen: 'A' | 'B' | 'C' | null
+  openSkus: Record<number, boolean>
+  globalPct: string
+  skuPcts: Record<number, string>
+  calcSku: string
+  calcCop: string
+  calcPct: string
+  calcFrom: number
+  calcMode: 'cop' | 'pct'
+  isReadOnly: boolean
+  exportDate: string
+}
