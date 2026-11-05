@@ -10,7 +10,8 @@ import {
   Users,
   PieChart,
   Zap,
-  Handshake
+  Handshake,
+  Calculator
 } from 'lucide-react'
 
 export default function Home() {
@@ -101,7 +102,7 @@ export default function Home() {
         </div>
 
         {/* Grid de Menú Principal */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 max-w-[1600px] mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 max-w-[1600px] mx-auto">
 
 
           {/* Opción 1: Registrar Negociación */}
@@ -206,6 +207,27 @@ export default function Home() {
               <div className="w-full py-3 px-4 rounded-lg bg-slate-100 border border-slate-200/80 text-slate-400 font-semibold text-sm flex items-center justify-center select-none">
                 Coming soon!
               </div>
+            </div>
+          </div>
+
+          {/* Opción 6: Simulador Andercol */}
+          <div
+            onClick={() => router.push('/simulador')}
+            className="group bg-white rounded-2xl p-7 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 hover:shadow-[0_20px_40px_-10px_rgba(37,65,83,0.1)] hover:border-[#254153]/20 transition-all duration-300 cursor-pointer relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Calculator className="w-32 h-32" />
+            </div>
+            <div className="relative z-10 flex flex-col h-full">
+              <div className="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-[#254153] transition-colors duration-300">
+                <Calculator className="w-7 h-7 text-[#254153] group-hover:text-white transition-colors duration-300" />
+              </div>
+              <h3 className="text-xl font-bold text-[#254153] mb-3 group-hover:translate-x-1 transition-transform">Simulador Andercol</h3>
+              <p className="text-slate-500 mb-8 flex-grow">Simule escenarios de negociación y precios con el proveedor Andercol.</p>
+              <button className="w-full py-3 px-4 rounded-lg border-2 border-[#254153] text-[#254153] font-semibold text-sm group-hover:bg-[#254153] group-hover:text-white transition-all duration-300 flex items-center justify-center gap-2">
+                Abrir Simulador
+                <span className="text-lg">→</span>
+              </button>
             </div>
           </div>
 
