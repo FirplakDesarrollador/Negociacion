@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANDERCOL SAS · Simulador de Negociación 2026 v12.1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f1f3f6;--sf:#fff;--s2:#f7f8fa;--bd:#dde1e9;--bd2:#b8bfcc;
+  --tx:#18202e;--t2:#6b7280;--t3:#9ca3af;
+  --rd:#dc2626;--rb:#fef2f2;--gn:#16a34a;--gb:#f0fdf4;
+  --or:#d97706;--ob:#fffbeb;--bl:#2563eb;--bb:#eff6ff;
+  --pu:#7c3aed;--tl:#0891b2;--tlb:#ecfeff;
+  --mo:'Consolas','Courier New',monospace;--fn:'Segoe UI',system-ui,sans-serif;
+  --r:8px;--rl:12px;
+}
+body{background:var(--bg);color:var(--tx);font-family:var(--fn);font-size:14px;line-height:1.5;min-width:1000px}
+.w{max-width:1300px;margin:0 auto;padding:20px 20px}
+.hd{border-bottom:2px solid var(--bd);padding-bottom:12px;margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.hd-left{flex:1}
+.hd-m{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--t2);margin-bottom:3px}
+.hd h1{font-size:21px;font-weight:700}
+.kpig{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.kpic{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:13px 15px}
+.kpil{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);margin-bottom:3px}
+.kpiv{font-size:20px;font-weight:700;font-family:var(--mo)}
+.kpis{font-size:11px;color:var(--t2);margin-top:3px}
+.kpic.rd .kpiv{color:var(--rd)}.kpic.gn .kpiv{color:var(--gn)}.kpic.bl .kpiv{color:var(--bl)}
+.proy-row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.pct-sm{width:58px;font-size:13px;font-family:var(--mo);border:1px solid var(--bd2);border-radius:4px;padding:3px 5px;text-align:right}
+.pct-sm:focus{outline:2px solid var(--bl);border-color:transparent}
+.sec{margin-bottom:20px}
+.stl{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
+.sub{font-size:12px;color:var(--t2);margin-bottom:10px;padding:6px 10px;background:var(--s2);border-left:3px solid var(--bd2);border-radius:0 4px 4px 0}
+.logic-badge{display:inline-flex;align-items:center;gap:5px;background:var(--tlb);color:var(--tl);border:1px solid #a5f3fc;border-radius:20px;font-size:11px;font-weight:600;padding:3px 10px;margin-bottom:10px}
+.gbar{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:11px 15px;margin-bottom:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gbar-lbl{font-size:12px;font-weight:600;white-space:nowrap}
+.g-pct{width:65px;font-size:13px;font-family:var(--mo);border:1px solid var(--bd2);border-radius:4px;padding:4px 6px;text-align:right}
+.g-pct:focus{outline:2px solid var(--bl);border-color:transparent}
+.btn{display:inline-flex;align-items:center;gap:4px;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:filter .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.1)}
+.btn-bl{background:var(--bl);color:#fff}.btn-dk{background:#18202e;color:#fff}
+.btn-gn{background:var(--gn);color:#fff}.btn-or{background:var(--or);color:#fff}.btn-pu{background:var(--pu);color:#fff}
+.btn-sm{background:var(--s2);color:var(--t2);border:1px solid var(--bd2);font-size:11px;padding:3px 8px;border-radius:4px;cursor:pointer}
+.btn-sm:hover{background:var(--bd2)}
+.gbar-sep{width:1px;height:28px;background:var(--bd)}
+.scn-g{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.scnc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:10px 13px;min-height:76px}
+.scnc.scna{border-left:3px solid var(--gn)}.scnc.scnb{border-left:3px solid var(--or)}.scnc.scnc2{border-left:3px solid var(--pu)}
+.scn-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.scn-lbl{font-size:12px;font-weight:700}
+.scn-empty{font-size:11px;color:var(--t3);font-style:italic;margin-top:4px}
+.scn-nums{font-size:11px;font-family:var(--mo);display:flex;flex-direction:column;gap:2px}
+.scn-desc{font-size:10px;color:var(--t2);margin-top:4px;line-height:1.4;font-style:italic}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:8px;overflow:hidden}
+.sc.fcs{border:2px solid var(--bl)}
+.sh{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .12s;flex-wrap:wrap;min-height:50px}
+.sh:hover{background:var(--s2)}
+.sdot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.snm{font-size:14px;font-weight:700;white-space:nowrap}
+.srf{font-size:11px;color:var(--t2);white-space:nowrap}
+.ssp{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--s2);color:var(--t2);white-space:nowrap}
+.bfcs{background:var(--bb);color:var(--bl);font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.shsep{flex:1;min-width:6px}
+.hsum{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.hbdg{font-size:10px;font-family:var(--mo);padding:2px 7px;border-radius:4px;white-space:nowrap;font-weight:700}
+.hbdg.r{background:var(--rb);color:var(--rd)}.hbdg.g{background:var(--gb);color:var(--gn)}.hbdg.n{background:var(--s2);color:var(--t2)}
+.kgw{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.kgl{font-size:11px;color:var(--t2);white-space:nowrap}
+.kgi{width:78px;font-size:12px;font-family:var(--mo);border:1px solid var(--bd2);border-radius:4px;padding:3px 5px;text-align:right;background:var(--sf)}
+.kgi:focus{outline:2px solid var(--bl);border-color:transparent}
+.tgl{font-size:13px;color:var(--t2);transition:transform .2s;flex-shrink:0}
+.tgl.op{transform:rotate(180deg)}
+.sb{display:none;border-top:1px solid var(--bd);overflow-x:auto}
+.sb.op{display:block}
+.snota{font-size:12px;color:var(--t2);padding:7px 14px;background:var(--s2);border-bottom:1px solid var(--bd);border-left:3px solid var(--bd2)}
+.sku-gbar{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.sg-pct{width:60px;font-size:12px;font-family:var(--mo);border:1px solid var(--bd2);border-radius:4px;padding:3px 5px;text-align:right;background:var(--sf)}
+.sg-pct:focus{outline:2px solid var(--bl);border-color:transparent}
+/* 14 columns */
+table.skt{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;min-width:1180px}
+table.skt thead tr:first-child{background:#e8ecf0}
+table.skt thead tr:last-child{background:var(--s2)}
+table.skt th{padding:4px 5px;text-align:right;font-weight:700;color:var(--t2);font-size:9.5px;text-transform:uppercase;letter-spacing:.03em;white-space:normal;line-height:1.25;border-bottom:2px solid var(--bd2);vertical-align:bottom}
+table.skt th:first-child{text-align:left;padding-left:12px}
+table.skt th.th-acum{background:#e6f4ea;color:#166534;border-bottom:2px solid #86efac}
+table.skt td{padding:5px 5px;border-bottom:1px solid var(--bd);text-align:right;vertical-align:middle;overflow:hidden}
+table.skt td:first-child{text-align:left;padding-left:12px;font-weight:700;color:var(--t2);font-size:12px}
+table.skt td.td-acum{background:#f0fdf4}
+table.skt tr.tr{background:var(--s2);font-weight:700}
+table.skt tr.tr td{border-top:2px solid var(--bd2);border-bottom:none}
+table.skt tr.tr td.td-acum{background:#dcfce7}
+/* Andercol editable cells highlight */
+table.skt td.td-and-edit{background:#fff8f0;padding:2px 3px}
+.mo{font-family:var(--mo)}.cr{color:var(--rd)}.cg{color:var(--gn)}.cn{color:var(--t2)}
+input[type=range].rng{width:100%;accent-color:var(--bl);display:block}
+input[type=number].nin{width:100%;font-size:11px;font-family:var(--mo);border:1px solid var(--bd2);border-radius:3px;padding:2px 4px;text-align:right;background:var(--sf)}
+input[type=number].nin:focus{outline:2px solid var(--bl);border-color:transparent}
+/* Andercol editable input styles */
+input[type=number].nin-and{width:100%;font-size:11px;font-family:var(--mo);border:1px solid #fed7aa;border-radius:3px;padding:2px 4px;text-align:right;background:#fff7ed}
+input[type=number].nin-and:focus{outline:2px solid var(--or);border-color:transparent}
+.og{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.oc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rl);padding:13px 15px}
+.och{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.och h3{font-size:14px;font-weight:700;margin-bottom:1px}
+.och p{font-size:11px;color:var(--t2)}
+.bdg{font-size:10px;padding:3px 8px;border-radius:20px;font-weight:600}
+.bdgw{background:var(--ob);color:var(--or)}.bdgg{background:var(--gb);color:var(--gn)}
+.ocb{border-top:1px solid var(--bd);padding-top:10px}
+.or2{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.ol{color:var(--t2)}.ov{font-family:var(--mo);font-weight:600}
+.ovg{color:var(--gn)}.ovbg{color:var(--gn);font-size:14px}
+.odv{border-top:1px solid var(--bd);padding-top:7px;margin-top:5px}
+.oht{font-size:11px;color:var(--t2);font-style:italic;margin-top:3px}
+.cleg{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:11px;color:var(--t2)}
+.cleg span{display:flex;align-items:center;gap:5px}
+.cdot{width:10px;height:10px;border-radius:2px;display:inline-block;flex-shrink:0}
+.sw{overflow-x:auto;border:1px solid var(--bd);border-radius:var(--r)}
+table.sumt{width:100%;border-collapse:collapse;font-size:12px;min-width:720px}
+table.sumt thead tr{background:var(--s2)}
+table.sumt th{padding:7px 10px;text-align:right;font-weight:700;font-size:10px;color:var(--t2);text-transform:uppercase;border-bottom:1px solid var(--bd2)}
+table.sumt th:first-child{text-align:left}
+table.sumt td{padding:6px 10px;text-align:right;font-family:var(--mo);border-bottom:1px solid var(--bd)}
+table.sumt td:first-child{text-align:left;font-family:var(--fn);font-weight:600;font-size:13px}
+table.sumt tr:last-child td{border-bottom:none;background:var(--s2);font-weight:700}
+
+.kpig{grid-template-columns:repeat(4,1fr)}
+.kpic.dk .kpiv{color:#18202e}
+.kpis b{font-family:var(--mo)}
+.vbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:9px 14px}
+.vbar-l{font-size:12px;font-weight:700;color:var(--tx);margin-right:4px}
+.vbtn{border:1px solid var(--bd2);background:var(--sf);color:var(--t2);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--fn)}
+.vbtn:hover{border-color:var(--bl);color:var(--bl)}
+.vbtn.on{background:var(--bl);color:#fff;border-color:var(--bl)}
+.vbar-n{font-size:11px;color:var(--t2);margin-left:auto}
+.corte{display:inline-block;background:#1e293b;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.04em;vertical-align:middle;margin-left:6px}
+/* Locked (real) rows: grey background, value colours preserved */
+table.skt tr.lk td,table.skt tr.lk td.td-acum{background:#eceef2}
+table.skt tr.lk td:first-child{color:#475569}
+table.skt tr.lk td.nreal{font-weight:700;color:var(--tx)}
+table.skt tr.sep td{border-top:2px dashed #94a3b8}
+table.sumt th.lkh{background:#e5e7eb}
+table.sumt td.lkc{background:#f1f2f5}
+.ocq-in{width:90px;font-size:13px;font-family:var(--mo);border:1px solid #fed7aa;background:#fff7ed;border-radius:4px;padding:3px 6px;text-align:right}
+.ocq-in:focus{outline:2px solid var(--or);border-color:transparent}
+.ovr{color:var(--rd)}
+/* Read-only bars */
+.ro-bar{display:none;background:#1e293b;color:#fff;text-align:center;padding:9px;font-size:12px;font-weight:600;letter-spacing:.04em;position:sticky;top:0;z-index:100;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.ro-bar .lbl{color:#fbbf24}
+.ro-btn{background:#fff;color:#1e293b;border:none;border-radius:5px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer}
+#edit-bar{display:none;background:var(--gb);border-bottom:2px solid var(--gn);padding:8px 20px;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
+#edit-bar span{font-size:12px;font-weight:600;color:var(--gn)}
+/* READONLY MODE */
+body.ro-mode .gbar,body.ro-mode .sku-gbar,body.ro-mode .btn-sm,body.ro-mode #exp-main{display:none!important}
+body.ro-mode input.nin,body.ro-mode input.rng,body.ro-mode input.nin-and,body.ro-mode input.kgi,body.ro-mode input.ocq-in{pointer-events:none}
+body.ro-mode input.nin,body.ro-mode input.kgi{background:var(--s2)}
+/* ACTIVE SCENARIO */
+.scnc{cursor:pointer;transition:box-shadow .15s}
+.scnc:hover{box-shadow:0 0 0 2px var(--bd2)}
+.scnc.active-scen{box-shadow:0 0 0 3px var(--bl)!important;background:var(--bb)}
+.ft{margin-top:20px;padding-top:10px;border-top:1px solid var(--bd);font-size:11px;color:var(--t3);text-align:center}
+table.skt td:first-child{white-space:nowrap}
+.calc-box{background:var(--sf);border:1px solid var(--bd);border-left:4px solid var(--or);border-radius:var(--r);padding:12px 15px}
+.cbar{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.cbar label{display:flex;flex-direction:column;font-size:11px;color:var(--t2);font-weight:600;gap:3px}
+.cbar select,.cbar input{font-size:13px;font-family:var(--mo);border:1px solid var(--bd2);border-radius:4px;padding:5px 7px;background:var(--sf);color:var(--tx)}
+.cbar input{width:110px;text-align:right}
+.cbar input:focus,.cbar select:focus{outline:2px solid var(--or);border-color:transparent}
+.c-o{font-size:12px;color:var(--t3);padding-bottom:7px}
+.c-clr{background:var(--s2);color:var(--t2);border:1px solid var(--bd2);font-size:12px;padding:5px 10px;border-radius:4px;cursor:pointer}
+#c-tab td.c-hi{font-weight:700}
+</style>
+</head>
+<body>
+<div class="ro-bar" id="ro-bar">
+  <span class="lbl" id="ro-bar-text">🔒 SOLO LECTURA</span>
+  <span>· Neg_andercol_readonly · Generado: <span id="ro-date"></span> ·</span>
+  <button class="ro-btn" id="toggle-btn" onclick="toggleMode()">🔓 Desbloquear para edición</button>
+</div>
+<div id="edit-bar">
+  <span>✏️ MODO EDICIÓN — ajusta los valores y exporta una nueva versión de solo lectura</span>
+  <button class="btn btn-gn" onclick="exportNew()">📥 Exportar nueva versión de solo lectura</button>
+</div>
+<div class="w">
+
+<div class="hd">
+  <div class="hd-left">
+    <p class="hd-m">Informe interno &nbsp;·&nbsp; Comité de Negociación &nbsp;·&nbsp; Confidencial</p>
+    <h1>Negociación ANDERCOL SAS — Simulador de escenarios 2026 <span class="corte" id="corte-badge"></span></h1>
+  </div>
+  <button class="btn" id="exp-main" style="background:#1e293b;color:#fff;flex-shrink:0;margin-top:4px;font-size:13px;padding:8px 16px" onclick="exportNew()">📥 Exportar informe de solo lectura</button>
+</div>
+
+<div class="vbar">
+  <span class="vbar-l">Vista:</span>
+  <button class="vbtn" id="vb-y26" onclick="setView('y26')">Año 2026 completo</button>
+  <button class="vbtn" id="vb-ytd" onclick="setView('ytd')">Año corrido</button>
+  <button class="vbtn" id="vb-hz" onclick="setView('hz')">Horizonte negociación</button>
+  <span class="vbar-n" id="vbar-n"></span>
+</div>
+
+<div class="kpig">
+  <div class="kpic"><div class="kpil">Gasto 2025 — Andercol</div><div class="kpiv" id="k-g25"></div><div class="kpis">COP · año completo · BI Compras 1</div></div>
+  <div class="kpic bl"><div class="kpil">Dimensión negocio compuestos 2025</div><div class="kpiv" id="k-d25"></div><div class="kpis">Andercol + Invesa + OCQ · año completo</div></div>
+  <div class="kpic dk"><div class="kpil">Dimensión negocio compuestos 2026</div><div class="kpiv" id="k-d26"></div><div class="kpis" id="k-d26s"></div></div>
+  <div class="kpic"><div class="kpil">SKUs en negociación</div><div class="kpiv">5 SKUs</div><div class="kpis" id="k-sku"></div></div>
+  <div class="kpic rd"><div class="kpil" id="k-and-l">Propuesta Andercol</div><div class="kpiv" id="k-and"></div><div class="kpis">Impacto vs precio base Mar-26</div></div>
+  <div class="kpic"><div class="kpil" id="k-neg-l">Negociado</div><div class="kpiv" id="k-neg"></div><div class="kpis">Impacto real + simulado vs base Mar-26</div></div>
+  <div class="kpic gn"><div class="kpil" id="k-av-l">Avoidance generado</div><div class="kpiv" id="k-av"></div><div class="kpis">Propuesta Andercol − negociado</div></div>
+  <div class="kpic"><div class="kpil">Impacto último aumento propuesto</div><div class="kpiv" id="k-last"></div><div class="kpis" id="k-last-s"></div></div>
+</div>
+
+<div class="sec">
+  <div class="stl">Calculadora rápida de aumento — ¿cuánto nos cuesta si Andercol sube el precio?</div>
+  <div class="calc-box">
+    <div class="cbar">
+      <label>SKU<select id="c-sku" onchange="calc()"></select></label>
+      <label>Aumento COP/kg<input id="c-cop" type="number" step="10" placeholder="ej. 1000" oninput="calcFrom('cop')"></label>
+      <span class="c-o">o</span>
+      <label>Aumento %<input id="c-pct" type="number" step="0.1" placeholder="ej. 5" oninput="calcFrom('pct')"></label>
+      <label>Aplica desde<select id="c-from" onchange="calc()"></select></label>
+      <button class="c-clr" onclick="calcClear()">✕ Limpiar</button>
+    </div>
+    <div class="sw"><table class="sumt" id="c-tab"></table></div>
+    <p class="oht" id="c-note"></p>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="stl">Simulador de negociación por SKU — precio por mes</div>
+  <div class="sub" id="sim-sub"></div>
+  <div class="logic-badge">⛓ % neg. = incremento mensual compuesto sobre el precio del mes anterior</div>
+
+  <div class="gbar">
+    <span class="gbar-lbl">Aplicar % incremental global (meses simulados):</span>
+    <input class="g-pct" type="number" id="g-pct" value="0" step="0.1" placeholder="%">
+    <button class="btn btn-bl" onclick="applyGlobal()">▶ Aplicar a todos</button>
+    <button class="btn btn-dk" onclick="resetAll()">↺ Resetear todo</button>
+    <span class="gbar-sep"></span>
+    <button class="btn btn-gn" onclick="saveScen('A')">💾 Guardar Escenario A</button>
+    <button class="btn btn-or" onclick="saveScen('B')">💾 Guardar Escenario B</button>
+    <button class="btn btn-pu" onclick="saveScen('C')">💾 Guardar Escenario C</button>
+  </div>
+
+  <div class="scn-g">
+    <div class="scnc" id="scn-a" onclick="restoreScen('A')"><div class="scn-hd"><span class="scn-lbl" style="color:var(--gn)">■ Escenario A</span></div><div class="scn-empty" id="scna-empty">Sin guardar aún</div><div id="scna-data" style="display:none"><div class="scn-nums" id="scna-nums"></div><div class="scn-desc" id="scna-desc"></div></div></div>
+    <div class="scnc" id="scn-b" onclick="restoreScen('B')"><div class="scn-hd"><span class="scn-lbl" style="color:var(--or)">■ Escenario B</span></div><div class="scn-empty" id="scnb-empty">Sin guardar aún</div><div id="scnb-data" style="display:none"><div class="scn-nums" id="scnb-nums"></div><div class="scn-desc" id="scnb-desc"></div></div></div>
+    <div class="scnc" id="scn-c" onclick="restoreScen('C')"><div class="scn-hd"><span class="scn-lbl" style="color:var(--pu)">■ Escenario C</span></div><div class="scn-empty" id="scnc-empty">Sin guardar aún</div><div id="scnc-data" style="display:none"><div class="scn-nums" id="scnc-nums"></div><div class="scn-desc" id="scnc-desc"></div></div></div>
+  </div>
+
+  <div id="sim"></div>
+</div>
+
+<div class="sec">
+  <div class="stl" id="sum-t">Resumen mensual consolidado</div>
+  <div class="sw"><table class="sumt" id="sumt"></table></div>
+</div>
+
+<div class="sec">
+  <div class="stl">Composición del impacto mensual por SKU (M COP vs precio base Mar-26)</div>
+  <p style="font-size:12px;color:var(--t2);margin-bottom:8px">Barras apiladas = propuesta Andercol por SKU. Línea negra = negociado (real hasta el corte, simulado después). La brecha es el <b>avoidance</b>. Zona gris = meses reales cerrados.</p>
+  <div class="cleg" id="cleg"></div>
+  <div style="position:relative;height:320px;width:100%"><canvas id="ch" role="img" aria-label="Impacto mensual Andercol vs negociado">Impacto mensual.</canvas></div>
+</div>
+
+<div class="sec">
+  <div class="stl">Alternativa de suministro — OCQ</div>
+  <div class="og" id="ocq"></div>
+</div>
+
+<div class="ft" id="ft"></div>
+</div>
+<script>
+let BAKED=null;/*BAKED_END*/
+const SRC_HTML='<!DOCTYPE html>\n'+document.documentElement.outerHTML;
+
+// ══ DATOS (BI Compras 1) — se actualizan en cada cierre mensual ══════════
+const MESES=['Ene-26','Feb-26','Mar-26','Abr-26','May-26','Jun-26','Jul-26','Ago-26','Sep-26','Oct-26','Nov-26','Dic-26','Ene-27','Feb-27','Mar-27','Abr-27'];
+const NM=16;
+const CORTE=8;                 // índice del último mes cerrado (8 = Sep-26)
+const FECHA_CORTE='30-Sep-2026';
+const G25_AND=5087163771.69;   // gasto 2025 Andercol (todas las referencias)
+const G25_INV=459593952;       // gasto 2025 Invesa
+const G25_OCQ=0;               // gasto 2025 OCQ
+const R26_TOT=3665758793.85;   // real Ene–corte 2026: Andercol + Invesa + OCQ
+const R26_AND=3500717593.85;   // real Ene–corte 2026: solo Andercol
+const R26_RESTO=207434993.85;  // real Ene–corte 2026 fuera de los 5 SKU Andercol
+const MIX_NOTE='Meses con varios precios facturados (precio definido por Compras): M202 Ene, Feb, Mar y Abr · 4891 Abr · 898GC May y Ago.';
+
+// pp = propuesta original Andercol (Ene–Mar sin propuesta → precio base)
+// rk / rp = kg y precio real Andercol por mes hasta el corte (null = sin compra)
+const SK=[
+ {n:'RESINA FV 4891',r:'9057232',pa:11052,col:'#2563eb',sh:14.6,hl:false,kgDef:5188,
+  pp:[null,null,null,11494,11954,12432,12432,12432,12432,12432,12432,12432,12432,12432,12432,12432],
+  rk:[5290,5980,5980,5520,2300,5750,5980,5290,3450],
+  rp:[11052,11052,11052,11052,11954,11954,11954,11117,9000],
+  nt:'OCQ ref. 3700 en compra activa desde May-26. Andercol bajó a 9.000 en Sep-26.'},
+ {n:'CRISTALAN M202',r:'9056967',pa:10569,col:'#d97706',sh:53.4,hl:false,kgDef:22202,
+  pp:[null,null,null,10100,10302,10714,10714,10714,10714,10714,10714,10714,10714,10714,10714,10714],
+  rk:[12420,25990,20721,11040,18400,20930,28290,20930,23000],
+  rp:[10569,10569,10569,10100,10302,10508,10508,10193,9887],
+  nt:'Propuesta Andercol: −4,64% Abr, +2% May, +4% Jun (10.714). OCQ ref. 4709 en evaluación.'},
+ {n:'GELCOAT BLANCO 898GC',r:'9057071',pa:18050,col:'#dc2626',sh:29.6,hl:true,kgDef:6371,
+  pp:[null,null,null,18772,19523,20304,20304,20304,20304,20304,20304,20304,20304,20304,20304,20304],
+  rk:[4720,7320,6840,6540,4340,6240,8540,5380,6940],
+  rp:[18050,18050,18050,18050,18321,18687,18687,18126,18126],
+  nt:'★ Objetivo principal. Propuesta Andercol: +12,5% acumulado Abr–Jun (20.304).'},
+ {n:'RESINA 2870 MOLDES',r:'9056846',pa:18928,col:'#059669',sh:0.5,hl:false,kgDef:0,
+  pp:[null,null,null,19496,20081,20683,20683,20683,20683,20683,20683,20683,20683,20683,20683,20683],
+  rk:[0,460,0,460,0,0,0,0,0],
+  rp:[null,18928,null,18928,null,null,null,null,null],
+  nt:'Compra poco frecuente. Kg simulados en 0: digita Kg/mes solo si planeas comprar.'},
+ {n:'GELCOAT 889G1',r:'9056915',pa:25458,col:'#0891b2',sh:0.7,hl:false,kgDef:0,
+  pp:[null,null,null,26476,27535,28637,28637,28637,28637,28637,28637,28637,28637,28637,28637,28637],
+  rk:[0,0,0,440,0,0,0,440,0],
+  rp:[null,null,null,25458,null,null,null,26943,null],
+  nt:'Compra poco frecuente. Kg simulados en 0: digita Kg/mes solo si planeas comprar.'}
+];
+// Compras reales a OCQ (pagado = total facturado)
+const OCQ=[
+ {si:1,ref:'4709',lbl:'M202 → contratipo OCQ',bdg:['bdgw','En evaluación'],def:8500,
+  buys:[{m:4,kg:460,pay:3910000},{m:5,kg:230,pay:1955000}]},
+ {si:0,ref:'3700',lbl:'Resina 4891 → contratipo OCQ',bdg:['bdgg','Ensayo exitoso'],def:9050,
+  buys:[{m:2,kg:230,pay:1725000},{m:4,kg:440,pay:3740000},{m:5,kg:1540,pay:13904000},{m:6,kg:2200,pay:19965000},{m:7,kg:1540,pay:13937000},{m:8,kg:2200,pay:19910000}]}
+];
+const VIEWS={
+ y26:{l:'Año 2026 completo',s:'Año 2026',a:0,b:11},
+ ytd:{l:'Año corrido · Ene-26 → '+MESES[CORTE],s:'Año corrido',a:0,b:CORTE},
+ hz:{l:'Horizonte negociación · Abr-26 → Abr-27',s:'Horizonte',a:3,b:15}
+};
+const SLMIN=-10,SLMAX=20;
+
+// ══ ESTADO ═══════════════════════════════════════════════════════════════
+let view='y26';
+let kgT=SK.map(s=>s.kgDef);
+let andP=SK.map(s=>s.pp.map(v=>v==null?s.pa:v));
+let negPct=SK.map(()=>Array(NM).fill(0));
+let ocqP=OCQ.map(o=>o.def);
+let scenarios={A:null,B:null,C:null};
+let activeScen=null;
+let isReadOnly=false;
+let chartInst=null,chartReal=[];
+
+function applyBaked(){
+  const B=BAKED;
+  if(B.view&&VIEWS[B.view])view=B.view;
+  if(B.kgT)kgT=B.kgT.slice(0,SK.length).map(Number);
+  // solo meses abiertos vienen del estado; los reales siempre salen de los datos
+  if(B.andP)SK.forEach((_,si)=>{for(let mi=CORTE+1;mi<NM;mi++)if(B.andP[si]&&B.andP[si][mi]!=null)andP[si][mi]=B.andP[si][mi];});
+  if(B.negPct)SK.forEach((_,si)=>{for(let mi=CORTE+1;mi<NM;mi++)if(B.negPct[si]&&B.negPct[si][mi]!=null)negPct[si][mi]=B.negPct[si][mi];});
+  if(B.ocqP)ocqP=B.ocqP.slice();
+  if(B.scenarios)scenarios=B.scenarios;
+  if(B.activeScen)activeScen=B.activeScen;
+}
+
+// ══ CÁLCULO ══════════════════════════════════════════════════════════════
+const isR=mi=>mi<=CORTE;
+function kgM(si,mi){return isR(mi)?(SK[si].rk[mi]||0):kgT[si];}
+function realPrevP(si,mi){for(let j=mi-1;j>=0;j--){const p=SK[si].rp[j];if(p!=null)return p;}return SK[si].pa;}
+function lastReal(si){return realPrevP(si,CORTE+1);}
+function negP(si,mi){
+  if(isR(mi))return SK[si].rp[mi];
+  let p=lastReal(si);
+  for(let j=CORTE+1;j<=mi;j++)p=p*(1+negPct[si][j]/100);
+  return Math.round(p);
+}
+function prevNegP(si,mi){if(isR(mi))return realPrevP(si,mi);return mi===CORTE+1?lastReal(si):negP(si,mi-1);}
+function aImp(si,mi){return kgM(si,mi)*(andP[si][mi]-SK[si].pa);}
+function nImp(si,mi){const p=negP(si,mi);return p==null?0:kgM(si,mi)*(p-SK[si].pa);}
+function nIncr(si,mi){const p=negP(si,mi);return p==null?0:kgM(si,mi)*(p-prevNegP(si,mi));}
+function aStep(si,mi){const prev=mi===0?SK[si].pa:andP[si][mi-1];return(andP[si][mi]/prev-1)*100;}
+function aCum(si,mi){return(andP[si][mi]/SK[si].pa-1)*100;}
+function nStep(si,mi){if(!isR(mi))return negPct[si][mi];const p=negP(si,mi);return p==null?null:(p/prevNegP(si,mi)-1)*100;}
+function nCum(si,mi){const p=negP(si,mi);return p==null?null:(p/SK[si].pa-1)*100;}
+function andRealAt(si,m){const p=SK[si].rp[m];return p!=null?p:realPrevP(si,m);}
+function vm(){const v=VIEWS[view],r=[];for(let i=v.a;i<=v.b;i++)r.push(i);return r;}
+function sum(a){return a.reduce((x,y)=>x+y,0);}
+function totals(){
+  let tA=0,tN=0,tL=0,open=0;
+  vm().forEach(mi=>{if(!isR(mi))open++;SK.forEach((_,si)=>{tA+=aImp(si,mi);tN+=nImp(si,mi);if(!isR(mi))tL+=kgT[si]*(andP[si][mi]-lastReal(si));});});
+  return{tA,tN,tV:tA-tN,tL,open};
+}
+function dim26(){
+  let sim=0;const nOpen=Math.max(0,11-CORTE);
+  for(let mi=CORTE+1;mi<=11;mi++)SK.forEach((_,si)=>{sim+=kgT[si]*negP(si,mi);});
+  const resto=R26_RESTO/(CORTE+1)*nOpen;
+  return{tot:R26_TOT+sim+resto,sim,resto};
+}
+
+// ══ FORMATO ══════════════════════════════════════════════════════════════
+function fmtM(v,d=1){return(v>=0?'+':'')+(v/1e6).toFixed(d)+'M';}
+function fmtP(v,d=2){return(v>0?'+':'')+v.toFixed(d)+'%';}
+function fmtC(v){return Math.abs(v)<5e4?'—':fmtM(v);}
+function num(v){return Math.round(v).toLocaleString('es-CO');}
+function big(v){return'$'+Math.round(v/1e6).toLocaleString('es-CO')+' M';}
+function bigS(v){return(v<0?'−':'+')+'$'+Math.abs(Math.round(v/1e6)).toLocaleString('es-CO')+' M';}
+function cc(v){return v>5e4?'cr':v<-5e4?'cg':'cn';}       // costo: + rojo / − verde
+function ccA(v){return v>5e4?'cg':v<-5e4?'cr':'cn';}      // avoidance/ahorro: + verde
+function cp(v){return v==null?'cn':v>0.05?'cr':v<-0.05?'cg':'cn';}
+function colP(p,pa){return p>pa?'var(--rd)':p<pa?'var(--gn)':'var(--t2)';}
+function colPc(v){return v>0.05?'var(--rd)':v<-0.05?'var(--gn)':'var(--t2)';}
+
+// ══ EVENTOS ══════════════════════════════════════════════════════════════
+function changed(){activeScen=null;refreshAll();}
+function onAndP(si,mi,val){const p=Math.round(parseFloat(val));if(!(p>0))return;for(let j=mi;j<NM;j++)andP[si][j]=p;changed();}
+function onAndPct(si,mi,val){const pct=parseFloat(val);if(isNaN(pct))return;const prev=mi===0?SK[si].pa:andP[si][mi-1];const p=Math.round(prev*(1+pct/100));for(let j=mi;j<NM;j++)andP[si][j]=p;changed();}
+function onSl(si,mi,val){negPct[si][mi]=parseFloat(val)||0;changed();}
+function onPt(si,mi,val){const v=parseFloat(val);if(isNaN(v))return;negPct[si][mi]=v;changed();}
+function onPr(si,mi,val){const np=parseFloat(val);if(!(np>0))return;negPct[si][mi]=(np/prevNegP(si,mi)-1)*100;changed();}
+function onKg(si,val){kgT[si]=Math.max(0,parseInt(val)||0);changed();}
+function applyPctToSku(si,pct){for(let mi=CORTE+1;mi<NM;mi++)negPct[si][mi]=pct;}
+function applyGlobal(){const pct=parseFloat(document.getElementById('g-pct').value)||0;SK.forEach((_,si)=>applyPctToSku(si,pct));changed();}
+function applySkuPct(si){const pct=parseFloat(document.getElementById('sg'+si).value)||0;applyPctToSku(si,pct);changed();}
+function resetSku(si){applyPctToSku(si,0);changed();}
+function resetAll(){SK.forEach((_,si)=>applyPctToSku(si,0));changed();}
+function onOcq(i,val){const p=parseFloat(val);if(!(p>0))return;ocqP[i]=p;refreshOcq();}
+function setView(v){view=v;refreshAll();}
+function toggleSku(si){document.getElementById('bd'+si).classList.toggle('op');document.getElementById('tg'+si).classList.toggle('op');}
+
+// ══ RENDER ═══════════════════════════════════════════════════════════════
+function renderSim(){
+  const c=document.getElementById('sim');c.innerHTML='';
+  SK.forEach((s,si)=>{
+    const card=document.createElement('div');card.className='sc'+(s.hl?' fcs':'');
+    const hd=document.createElement('div');hd.className='sh';
+    hd.innerHTML=`<span class="sdot" style="background:${s.col}"></span>
+      <span class="snm">${s.n}</span><span class="srf">Ref. ${s.r}</span>
+      ${s.hl?'<span class="bfcs">★ Objetivo</span>':''}
+      <span class="ssp">${s.sh.toFixed(1)}% gasto And. 2026</span>
+      <span class="shsep"></span>
+      <span class="hsum"><span class="hbdg r" id="hand${si}">And: —</span><span class="hbdg n" id="hneg${si}">Neg: —</span><span class="hbdg g" id="hav${si}">Av: —</span></span>
+      <div class="kgw" onclick="event.stopPropagation()"><label class="kgl" for="ki${si}">Kg/mes desde ${MESES[CORTE+1]}:</label>
+      <input class="kgi" type="number" id="ki${si}" step="50" min="0" value="${kgT[si]}" oninput="onKg(${si},this.value)"></div>
+      <button class="btn-sm" style="margin-left:4px" onclick="event.stopPropagation();resetSku(${si})">↺ Resetear</button>
+      <span class="tgl${s.hl?' op':''}" id="tg${si}">▼</span>`;
+    hd.addEventListener('click',()=>toggleSku(si));
+    card.appendChild(hd);
+    const bd=document.createElement('div');bd.className='sb'+(s.hl?' op':'');bd.id='bd'+si;
+    let h='';
+    if(s.nt)h+=`<div class="snota">${s.nt}</div>`;
+    h+=`<div class="sku-gbar"><span style="font-size:11px;color:var(--t2);white-space:nowrap">Aplicar % incremental a los meses simulados de este SKU:</span>
+      <input class="sg-pct" type="number" id="sg${si}" step="0.1" placeholder="%">
+      <button class="btn btn-bl" style="padding:4px 10px;font-size:11px" onclick="applySkuPct(${si})">▶ Aplicar</button></div>`;
+    h+=`<table class="skt"><colgroup><col style="width:82px"><col style="width:64px"><col style="width:66px"><col style="width:60px"><col style="width:84px"><col style="width:60px"><col style="width:66px"><col style="width:72px"><col style="width:78px"><col style="width:58px"><col style="width:64px"><col style="width:64px"><col style="width:70px"><col style="width:68px"></colgroup>
+      <thead><tr>
+        <th rowspan="2" style="text-align:left">Mes</th><th rowspan="2">Kg/mes</th><th rowspan="2">Precio base Mar-26</th>
+        <th colspan="4" style="text-align:center;background:#fef2f2;color:var(--rd);border-bottom:1px solid #fca5a5">— Andercol (propuesta · editable desde ${MESES[CORTE+1]} 🖊) —</th>
+        <th colspan="4" style="text-align:center;background:#eff6ff;color:var(--bl);border-bottom:1px solid #93c5fd">— Negociado (real 🔒 / simulado) —</th>
+        <th colspan="3" style="text-align:center;background:#f0fdf4;color:var(--gn);border-bottom:1px solid #86efac">— Negociado (acumulado) —</th>
+      </tr><tr>
+        <th>% prop.<br>Andercol</th><th>Precio prop.<br>Andercol</th><th>% impacto<br>aumento</th><th>Impacto And. (M)</th>
+        <th>Slider % neg</th><th>Precio neg.</th><th>% neg.</th><th>Impacto neg. (M)</th>
+        <th class="th-acum">% neg acum.</th><th class="th-acum">Imp. neg acum. (M)</th><th class="th-acum">Avoid. (M)</th>
+      </tr></thead><tbody>`;
+    for(let mi=0;mi<NM;mi++){
+      const lk=isR(mi),cls=(lk?'lk':'')+(mi===CORTE+1?' sep':'');
+      const andCells=lk
+        ?`<td class="mo" id="apt${si}_${mi}"></td><td class="mo" id="apr${si}_${mi}"></td>`
+        :`<td class="td-and-edit"><input type="number" class="nin-and" id="apt${si}_${mi}" step="0.1" oninput="onAndPct(${si},${mi},this.value)"></td><td class="td-and-edit"><input type="number" class="nin-and" id="apr${si}_${mi}" step="1" oninput="onAndP(${si},${mi},this.value)"></td>`;
+      const negCells=lk
+        ?`<td class="cn" style="text-align:center">🔒</td><td class="mo nreal" id="pr${si}_${mi}"></td><td class="mo" id="pt${si}_${mi}"></td>`
+        :`<td><input type="range" class="rng" id="sl${si}_${mi}" min="${SLMIN}" max="${SLMAX}" step="0.1" oninput="onSl(${si},${mi},this.value)"></td><td><input type="number" class="nin" id="pr${si}_${mi}" min="0" step="1" oninput="onPr(${si},${mi},this.value)"></td><td><input type="number" class="nin" id="pt${si}_${mi}" step="0.1" oninput="onPt(${si},${mi},this.value)"></td>`;
+      h+=`<tr id="rw${si}_${mi}" class="${cls}"><td>${MESES[mi]}${lk?' 🔒':''}</td>
+        <td class="mo" id="kd${si}_${mi}"></td><td class="mo cn">${num(s.pa)}</td>
+        ${andCells}<td class="mo" id="acp${si}_${mi}"></td><td class="mo" id="ai${si}_${mi}"></td>
+        ${negCells}<td class="mo" id="ni${si}_${mi}"></td>
+        <td class="mo td-acum" id="pca${si}_${mi}"></td><td class="mo td-acum" id="na${si}_${mi}"></td><td class="mo td-acum" id="av${si}_${mi}"></td></tr>`;
+    }
+    h+=`<tr class="tr"><td id="tl${si}">TOTAL</td><td class="mo" id="kt${si}"></td><td colspan="4"></td><td class="mo" id="at${si}"></td>
+      <td colspan="3"></td><td class="mo" id="nit${si}"></td><td class="td-acum"></td><td class="mo td-acum" id="nat${si}"></td><td class="mo td-acum" id="avt${si}"></td></tr></tbody></table>`;
+    bd.innerHTML=h;card.appendChild(bd);c.appendChild(card);
+  });
+}
+function renderOcq(){
+  document.getElementById('ocq').innerHTML=OCQ.map((o,i)=>`<div class="oc"><div class="och"><div><p>${o.lbl}</p><h3>OCQ — ref. ${o.ref}</h3></div><span class="bdg ${o.bdg[0]}">${o.bdg[1]}</span></div>
+    <div class="ocb">
+      <div class="or2"><span class="ol">Precio OCQ ref. ${o.ref} (COP/kg) 🖊</span><input class="ocq-in" type="number" id="ocq${i}" step="1" value="${ocqP[i]}" oninput="onOcq(${i},this.value)"></div>
+      <div class="or2"><span class="ol">Último precio real Andercol (${MESES[CORTE]})</span><span class="ov" id="oa${i}"></span></div>
+      <div class="or2"><span class="ol">Diferencia OCQ vs Andercol por kg</span><span class="ov" id="od${i}"></span></div>
+      <div class="or2"><span class="ol">Kg simulados Andercol ${MESES[CORTE+1]} → ${MESES[NM-1]}</span><span class="ov" id="ok${i}"></span></div>
+      <div class="odv"><div class="or2"><span class="ol">Ahorro potencial si se cambia a OCQ</span><span class="ov" style="font-size:14px" id="op${i}"></span></div>
+      <div class="or2"><span class="ol">Ahorro ya capturado Ene-26 → ${MESES[CORTE]}</span><span class="ov" style="font-size:14px" id="oc${i}"></span></div>
+      <p class="oht" id="oh${i}"></p></div>
+    </div></div>`).join('');
+}
+
+// ══ REFRESCO ═════════════════════════════════════════════════════════════
+function setTxt(id,txt,cls){const e=document.getElementById(id);if(!e)return;e.textContent=txt;if(cls!==undefined)e.className='mo '+cls;}
+function setInp(id,val,color){const e=document.getElementById(id);if(!e)return;if(e!==document.activeElement)e.value=val;if(color)e.style.color=color;}
+function refreshSku(si){
+  const s=SK[si],inV=new Set(vm());
+  for(let mi=0;mi<NM;mi++){
+    const row=document.getElementById(`rw${si}_${mi}`);if(row)row.style.display=inV.has(mi)?'':'none';
+    const kg=kgM(si,mi),ap=andP[si][mi],as=aStep(si,mi),ac=aCum(si,mi),ai=aImp(si,mi);
+    const np=negP(si,mi),ns=nStep(si,mi),nc=nCum(si,mi),na=nImp(si,mi),ni=nIncr(si,mi),av=ai-na;
+    const noBuy=isR(mi)&&np==null;
+    setTxt(`kd${si}_${mi}`,num(kg),isR(mi)?(kg?'':'cn'):'');
+    if(isR(mi)){
+      setTxt(`apt${si}_${mi}`,Math.abs(as)<0.005?'—':fmtP(as,2),cp(as));
+      setTxt(`apr${si}_${mi}`,num(ap),ap>s.pa?'cr':ap<s.pa?'cg':'cn');
+      setTxt(`pr${si}_${mi}`,noBuy?'—':num(np),noBuy?'cn':'nreal');
+      setTxt(`pt${si}_${mi}`,ns==null?'—':(Math.abs(ns)<0.005?'0.00%':fmtP(ns,2)),cp(ns));
+    }else{
+      setInp(`apt${si}_${mi}`,as.toFixed(2),colPc(as));
+      setInp(`apr${si}_${mi}`,ap,colP(ap,s.pa));
+      setInp(`sl${si}_${mi}`,Math.max(SLMIN,Math.min(SLMAX,negPct[si][mi])));
+      setInp(`pr${si}_${mi}`,np,colP(np,s.pa));
+      setInp(`pt${si}_${mi}`,(+negPct[si][mi]).toFixed(2),colPc(negPct[si][mi]));
+    }
+    setTxt(`acp${si}_${mi}`,fmtP(ac,2),cp(ac));
+    setTxt(`ai${si}_${mi}`,fmtC(ai),cc(ai));
+    setTxt(`ni${si}_${mi}`,noBuy?'—':fmtC(ni),cc(ni));
+    setTxt(`pca${si}_${mi}`,nc==null?'—':fmtP(nc,2),cp(nc));
+    setTxt(`na${si}_${mi}`,noBuy?'—':fmtC(na),cc(na));
+    setTxt(`av${si}_${mi}`,noBuy?'—':fmtC(av),ccA(av));
+  }
+  const m=vm();
+  const tk=sum(m.map(mi=>kgM(si,mi))),ta=sum(m.map(mi=>aImp(si,mi))),tn=sum(m.map(mi=>nImp(si,mi))),tni=sum(m.map(mi=>nIncr(si,mi))),tv=ta-tn;
+  setTxt('tl'+si,'TOTAL · '+VIEWS[view].s);
+  setTxt('kt'+si,num(tk),'');
+  setTxt('at'+si,fmtM(ta),cc(ta));
+  setTxt('nit'+si,fmtM(tni),cc(tni));
+  setTxt('nat'+si,fmtM(tn),cc(tn));
+  setTxt('avt'+si,fmtM(tv),ccA(tv));
+  const hA=document.getElementById('hand'+si),hN=document.getElementById('hneg'+si),hV=document.getElementById('hav'+si);
+  if(hA){hA.textContent='And: '+fmtM(ta,0);hA.className='hbdg '+(ta>5e4?'r':ta<-5e4?'g':'n');}
+  if(hN){hN.textContent='Neg: '+fmtM(tn,0);hN.className='hbdg '+(tn>5e4?'r':tn<-5e4?'g':'n');}
+  if(hV){hV.textContent='Av: '+fmtM(tv,0);hV.className='hbdg '+(tv>5e4?'g':tv<-5e4?'r':'n');}
+  setInp('ki'+si,kgT[si]);
+}
+function refreshKpis(){
+  const t=totals(),d=dim26(),v=VIEWS[view];
+  setTxt('k-and-l','Propuesta Andercol · '+v.s);document.getElementById('k-and-l').className='kpil';
+  setTxt('k-neg-l','Negociado · '+v.s);document.getElementById('k-neg-l').className='kpil';
+  setTxt('k-av-l','Avoidance generado · '+v.s);document.getElementById('k-av-l').className='kpil';
+  document.getElementById('k-and').textContent=bigS(t.tA);
+  const kn=document.getElementById('k-neg');kn.textContent=bigS(t.tN);kn.style.color=t.tN>5e4?'var(--rd)':t.tN<-5e4?'var(--gn)':'var(--tx)';
+  const kv=document.getElementById('k-av');kv.textContent=bigS(t.tV);kv.style.color=t.tV>=0?'var(--gn)':'var(--rd)';
+  const kl=document.getElementById('k-last');
+  if(t.open){kl.textContent=bigS(t.tL);kl.style.color=t.tL>5e4?'var(--rd)':t.tL<-5e4?'var(--gn)':'var(--tx)';
+    document.getElementById('k-last-s').textContent='(Propuesta − último precio pagado) × kg · '+t.open+' meses simulados de la vista';}
+  else{kl.textContent='—';kl.style.color='var(--t2)';document.getElementById('k-last-s').textContent='La vista no tiene meses simulados';}
+  const d25=G25_AND+G25_INV+G25_OCQ;
+  document.getElementById('k-d26').textContent=big(d.tot);
+  document.getElementById('k-d26s').innerHTML=`Real Ene–${MESES[CORTE].slice(0,3)} <b>${big(R26_TOT)}</b> + simulado ${MESES[CORTE+1].slice(0,3)}–Dic <b>${big(d.sim+d.resto)}</b> · ${fmtP((d.tot/d25-1)*100,1)} vs 2025`;
+}
+function refreshOcq(){
+  OCQ.forEach((o,i)=>{
+    const si=o.si,aL=lastReal(si),p=ocqP[i],diff=p-aL,pct=diff/aL*100;
+    const kgSim=kgT[si]*(NM-1-CORTE),pot=(aL-p)*kgSim;
+    let capKg=0,cap=0;o.buys.forEach(b=>{capKg+=b.kg;cap+=b.kg*andRealAt(si,b.m)-b.pay;});
+    setInp('ocq'+i,p);
+    setTxt('oa'+i,num(aL)+' COP/kg','');
+    setTxt('od'+i,(diff>0?'+':diff<0?'−':'')+num(Math.abs(diff))+' · '+fmtP(pct,1),diff<0?'cg':diff>0?'cr':'cn');
+    setTxt('ok'+i,num(kgSim)+' kg','');
+    setTxt('op'+i,bigS(pot),pot>5e4?'cg':pot<-5e4?'cr':'cn');
+    setTxt('oc'+i,bigS(cap),cap>5e4?'cg':cap<-5e4?'cr':'cn');
+    document.getElementById('oh'+i).textContent=`${num(capKg)} kg comprados a OCQ vs precio Andercol del mismo mes.`+(pot<0?' OCQ hoy está por encima del último precio Andercol.':'');
+  });
+}
+function buildSumTable(){
+  const m=vm();
+  const aM=m.map(mi=>sum(SK.map((_,si)=>aImp(si,mi)))),nM=m.map(mi=>sum(SK.map((_,si)=>nImp(si,mi)))),vM=aM.map((v,i)=>v-nM[i]);
+  const td=(v,i,f)=>`<td class="${f(v)}${isR(m[i])?' lkc':''}">${fmtC(v)}</td>`;
+  let h=`<thead><tr><th>Concepto</th>${m.map(mi=>`<th class="${isR(mi)?'lkh':''}">${MESES[mi]}${isR(mi)?' 🔒':''}</th>`).join('')}<th>Total</th></tr></thead><tbody>`;
+  h+=`<tr><td>Propuesta Andercol</td>${aM.map((v,i)=>td(v,i,cc)).join('')}<td class="${cc(sum(aM))}" style="font-weight:700">${fmtM(sum(aM),0)}</td></tr>`;
+  h+=`<tr><td>Negociado (real + simulado)</td>${nM.map((v,i)=>td(v,i,cc)).join('')}<td class="${cc(sum(nM))}" style="font-weight:700">${fmtM(sum(nM),0)}</td></tr>`;
+  h+=`<tr><td style="color:var(--gn)">Avoidance generado</td>${vM.map((v,i)=>td(v,i,ccA)).join('')}<td class="${ccA(sum(vM))}" style="font-weight:700">${fmtM(sum(vM),0)}</td></tr></tbody>`;
+  document.getElementById('sumt').innerHTML=h;
+  document.getElementById('sum-t').textContent='Resumen mensual consolidado · '+VIEWS[view].l+' (M COP vs precio base Mar-26)';
+}
+const shadePlugin={id:'realShade',beforeDatasetsDraw(c){
+  const x=c.scales.x,a=c.chartArea,ctx=c.ctx,n=c.data.labels.length;if(!n)return;
+  const w=(a.right-a.left)/n;ctx.save();ctx.fillStyle='rgba(100,116,139,0.12)';
+  chartReal.forEach((r,i)=>{if(r){const cx=x.getPixelForValue(i);ctx.fillRect(cx-w/2,a.top,w,a.bottom-a.top);}});ctx.restore();}};
+function chartData(){
+  const m=vm();chartReal=m.map(isR);
+  return{labels:m.map(mi=>MESES[mi]),
+    bars:SK.map((_,si)=>m.map(mi=>Math.round(aImp(si,mi)/1e5)/10)),
+    line:m.map(mi=>Math.round(sum(SK.map((_,si)=>nImp(si,mi)))/1e5)/10)};
+}
+function initChart(){
+  document.getElementById('cleg').innerHTML=SK.map(s=>`<span><span class="cdot" style="background:${s.col}"></span>${s.n}</span>`).join('')+
+    `<span><span style="display:inline-block;width:20px;height:2.5px;background:#18202e;border-radius:2px;vertical-align:middle"></span> Negociado (real + simulado)</span>`;
+  if(typeof Chart==='undefined')return;
+  const d=chartData();
+  chartInst=new Chart(document.getElementById('ch'),{
+    data:{labels:d.labels,datasets:[
+      ...SK.map((s,si)=>({label:s.n,type:'bar',data:d.bars[si],backgroundColor:s.col+'BB',borderColor:s.col,borderWidth:0,stack:'A',order:1})),
+      {label:'Negociado',type:'line',data:d.line,borderColor:'#18202e',borderWidth:2.5,pointRadius:4,pointBackgroundColor:'#18202e',fill:false,tension:0.15,order:0}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(1)} M COP`}}},
+      scales:{x:{stacked:true,ticks:{autoSkip:false,maxRotation:0,color:'#6b7280',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},
+        y:{stacked:true,title:{display:true,text:'M COP vs precio base Mar-26',color:'#6b7280',font:{size:11}},ticks:{color:'#6b7280',callback:v=>(v>0?'+':'')+v+'M'},grid:{color:'rgba(0,0,0,0.07)'}}}},
+    plugins:[shadePlugin]});
+}
+function updateChart(){
+  if(!chartInst)return;const d=chartData();
+  chartInst.data.labels=d.labels;SK.forEach((_,si)=>{chartInst.data.datasets[si].data=d.bars[si];});
+  chartInst.data.datasets[SK.length].data=d.line;chartInst.update('none');
+}
+function refreshView(){
+  Object.keys(VIEWS).forEach(k=>document.getElementById('vb-'+k).classList.toggle('on',k===view));
+  document.getElementById('vb-ytd').textContent='Año corrido (Ene → '+MESES[CORTE]+')';
+  document.getElementById('vb-hz').textContent='Horizonte negociación (Abr-26 → Abr-27)';
+  document.getElementById('vbar-n').textContent='KPIs, tablas y gráfica se recalculan según la vista';
+}
+function refreshAll(){refreshView();calc();SK.forEach((_,si)=>refreshSku(si));refreshKpis();buildSumTable();updateChart();refreshOcq();updScenDisplay();}
+
+
+// ══ CALCULADORA RÁPIDA DE AUMENTO (consulta: no modifica el simulador) ══
+let cMode='cop';
+function calcInit(){
+  document.getElementById('c-sku').innerHTML=SK.map((s,si)=>`<option value="${si}"${s.hl?' selected':''}>${s.n}</option>`).join('')+'<option value="all">Todos los SKU</option>';
+  let o='';for(let mi=CORTE+1;mi<NM;mi++)o+=`<option value="${mi}">${MESES[mi]}</option>`;
+  document.getElementById('c-from').innerHTML=o;
+}
+function calcFrom(mode){cMode=mode;calc();}
+function calcClear(){document.getElementById('c-cop').value='';document.getElementById('c-pct').value='';calc();}
+function calc(){
+  const sel=document.getElementById('c-sku').value,from=parseInt(document.getElementById('c-from').value);
+  const ci=document.getElementById('c-cop'),pi=document.getElementById('c-pct');
+  const val=parseFloat((cMode==='cop'?ci:pi).value);
+  const list=sel==='all'?SK.map((_,si)=>si):[parseInt(sel)];
+  const n26=Math.max(0,11-from+1),nH=NM-from;
+  const tab=document.getElementById('c-tab');
+  if(isNaN(val)||val===0){
+    if(sel!=='all'){if(cMode==='cop'&&document.activeElement!==pi)pi.value='';if(cMode==='pct'&&document.activeElement!==ci)ci.value='';}
+    tab.innerHTML='<tbody><tr><td style="font-weight:400;color:var(--t2)">Escribe un aumento en COP/kg o en % para ver el impacto.</td></tr></tbody>';
+    document.getElementById('c-note').textContent='';return;
+  }
+  const rows=list.map(si=>{const last=lastReal(si),d=cMode==='cop'?val:last*val/100,kg=kgT[si],m=kg*d;
+    return{si,last,d,pct:d/last*100,np:last+d,kg,m,i26:m*n26,iH:m*nH,iA:m*12};});
+  if(sel!=='all'){const r=rows[0];
+    if(cMode==='cop'&&document.activeElement!==pi)pi.value=r.pct.toFixed(2);
+    if(cMode==='pct'&&document.activeElement!==ci)ci.value=Math.round(r.d);}
+  else{if(cMode==='cop'&&document.activeElement!==pi)pi.value='';if(cMode==='pct'&&document.activeElement!==ci)ci.value='';}
+  const fM=v=>Math.abs(v)<5e4?'—':fmtM(v);
+  let h=`<thead><tr><th>SKU</th><th>Último precio pagado</th><th>Aumento COP/kg</th><th>Aumento %</th><th>Precio nuevo</th><th>Kg/mes simulado</th><th>Impacto por mes</th><th>${MESES[from]} → Dic-26 (${n26} m)</th><th>${MESES[from]} → ${MESES[NM-1]} (${nH} m)</th><th>Anualizado (12 m)</th></tr></thead><tbody>`;
+  rows.forEach(r=>{h+=`<tr><td>${SK[r.si].n}</td><td>${num(r.last)}</td><td class="${cp(r.d)}">${r.d>0?'+':''}${num(r.d)}</td><td class="${cp(r.pct)}">${fmtP(r.pct,2)}</td><td class="c-hi">${num(r.np)}</td><td>${num(r.kg)}</td>
+    <td class="${cc(r.m)} c-hi">${fM(r.m)}</td><td class="${cc(r.i26)}">${n26?fM(r.i26):'—'}</td><td class="${cc(r.iH)}">${fM(r.iH)}</td><td class="${cc(r.iA)}">${fM(r.iA)}</td></tr>`;});
+  if(rows.length>1){const t=k=>sum(rows.map(r=>r[k]));
+    h+=`<tr><td>TOTAL</td><td></td><td></td><td></td><td></td><td>${num(t('kg'))}</td><td class="${cc(t('m'))}">${fM(t('m'))}</td><td class="${cc(t('i26'))}">${n26?fM(t('i26')):'—'}</td><td class="${cc(t('iH'))}">${fM(t('iH'))}</td><td class="${cc(t('iA'))}">${fM(t('iA'))}</td></tr>`;}
+  else h+='<tr style="display:none"><td></td></tr>';
+  tab.innerHTML=h+'</tbody>';
+  const zero=rows.filter(r=>r.kg===0).map(r=>SK[r.si].n);
+  document.getElementById('c-note').textContent='Base: último precio real pagado a Andercol. Kg = Kg/mes simulado de cada SKU (encabezado del simulador). Es una consulta: no modifica tablas, KPIs ni escenarios.'+(zero.length?' Sin kg simulados (impacto 0): '+zero.join(', ')+'.':'');
+}
+
+// ══ ESCENARIOS ═══════════════════════════════════════════════════════════
+function describeScenario(){
+  const info=SK.map((s,si)=>{const p=[];for(let mi=CORTE+1;mi<NM;mi++)p.push(Math.round(negPct[si][mi]*100)/100);
+    return{name:s.n,same:new Set(p.map(x=>x.toFixed(2))).size===1,val:p[0],min:Math.min(...p),max:Math.max(...p)};});
+  const g=info.every(s=>s.same&&Math.abs(s.val-info[0].val)<0.01);
+  if(g)return info[0].val===0?'Meses simulados al último precio real pagado':`${fmtP(info[0].val,1)} incremental/mes en todos los SKU`;
+  return info.map(s=>s.same?`${s.name}: ${fmtP(s.val,1)}/mes`:`${s.name}: ${fmtP(s.min,1)} a ${fmtP(s.max,1)}/mes`).join(' · ');
+}
+function snap(){return{negPct:negPct.map(a=>[...a]),andP:andP.map(a=>[...a]),kgT:[...kgT],ocqP:[...ocqP],desc:describeScenario()};}
+function totalsOf(st){
+  const b=[negPct,andP,kgT];negPct=st.negPct;andP=st.andP;kgT=st.kgT;
+  const t=totals();[negPct,andP,kgT]=b;return t;
+}
+function saveScen(l){scenarios[l]=snap();activeScen=l;updScenDisplay();}
+function restoreScen(l){
+  const s=scenarios[l];if(!s)return;
+  negPct=s.negPct.map(a=>[...a]);andP=s.andP.map(a=>[...a]);kgT=[...s.kgT];if(s.ocqP)ocqP=[...s.ocqP];
+  refreshAll();activeScen=l;updScenDisplay();
+}
+const SCN_CLS={A:'scna',B:'scnb',C:'scnc2'};
+function updScenDisplay(){
+  Object.keys(SCN_CLS).forEach(l=>{
+    const sc=scenarios[l],lc=l.toLowerCase(),card=document.getElementById('scn-'+lc);
+    if(sc){
+      const t=totalsOf(sc);
+      document.getElementById(`scn${lc}-empty`).style.display='none';document.getElementById(`scn${lc}-data`).style.display='block';
+      card.className='scnc '+SCN_CLS[l];
+      document.getElementById(`scn${lc}-nums`).innerHTML=`<span>Andercol: <b style="color:var(--rd)">${fmtM(t.tA,0)}</b></span><span>Negociado: <b>${fmtM(t.tN,0)}</b></span><span>Avoidance: <b style="color:var(--gn)">${fmtM(t.tV,0)}</b></span><span style="color:var(--t3)">(${VIEWS[view].s})</span>`;
+      document.getElementById(`scn${lc}-desc`).textContent=sc.desc;
+    }
+    card.classList.toggle('active-scen',activeScen===l&&!!sc);
+  });
+}
+
+// ══ SOLO LECTURA / EXPORTAR ══════════════════════════════════════════════
+function toggleMode(){
+  isReadOnly=!isReadOnly;
+  document.body.classList.toggle('ro-mode',isReadOnly);
+  document.getElementById('toggle-btn').textContent=isReadOnly?'🔓 Desbloquear para edición':'🔒 Volver a solo lectura';
+  document.getElementById('ro-bar-text').textContent=isReadOnly?'🔒 SOLO LECTURA':'✏️ MODO EDICIÓN';
+  document.getElementById('ro-bar').style.background=isReadOnly?'#1e293b':'#166534';
+  document.getElementById('edit-bar').style.display=isReadOnly?'none':'flex';
+}
+function exportNew(){
+  const ds=new Date().toLocaleDateString('es-CO',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const st={ro:true,date:ds,view,kgT,andP,negPct,ocqP,scenarios,activeScen};
+  const json=JSON.stringify(st).replace(/</g,'\\u003c');
+  const M1='let BAK'+'ED=',M2=';/*BAK'+'ED_END*/';
+  const i=SRC_HTML.indexOf(M1),j=SRC_HTML.indexOf(M2,i);
+  if(i<0||j<0){alert('No se pudo generar el archivo de solo lectura.');return;}
+  const html=SRC_HTML.slice(0,i+M1.length)+json+SRC_HTML.slice(j);
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='Neg_andercol_readonly.html';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);document.body.removeChild(a);},1000);
+}
+
+// ══ INICIO ═══════════════════════════════════════════════════════════════
+if(BAKED)applyBaked();
+document.getElementById('corte-badge').textContent='Datos reales al '+FECHA_CORTE;
+document.getElementById('k-g25').textContent=big(G25_AND);
+document.getElementById('k-d25').textContent=big(G25_AND+G25_INV+G25_OCQ);
+document.getElementById('k-sku').textContent=(SK.reduce((a,s)=>a+s.sh,0)).toFixed(1)+'% del gasto Andercol Ene–'+MESES[CORTE].slice(0,3)+' 2026';
+document.getElementById('sim-sub').innerHTML=`<b>Ene-26 → ${MESES[CORTE]}</b> = datos reales de BI Compras 1 (filas grises 🔒, no editables). <b>Desde ${MESES[CORTE+1]}</b> se simula: el precio negociado parte del último precio real pagado y el % neg. se compone mes a mes. Columnas Andercol en <b style="color:var(--or)">naranja</b> = editables; al cambiar un mes, los siguientes toman el mismo valor. El campo Kg/mes del encabezado solo afecta los meses simulados. Base de impacto = precio Mar-26 (antes del aumento).<br><span style="color:var(--t3)">${MIX_NOTE}</span>`;
+document.getElementById('ft').innerHTML='Área de Compras &nbsp;·&nbsp; Uso interno y confidencial &nbsp;·&nbsp; Datos: BI Compras 1 al '+FECHA_CORTE;
+calcInit();renderSim();renderOcq();initChart();refreshAll();
+if(BAKED&&BAKED.ro){
+  isReadOnly=true;document.body.classList.add('ro-mode');
+  document.getElementById('ro-bar').style.display='flex';
+  document.getElementById('ro-date').textContent=BAKED.date||'';
+  document.title='Neg_andercol_readonly — '+(BAKED.date||'');
+}
+</script>
+</body>
+</html>
